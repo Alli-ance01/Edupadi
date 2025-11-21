@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduPadi - AI Homework Helper</title>
+    <meta name="description" content="Get instant AI-powered solutions to your homework questions. Built for Nigerian students.">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-top: 10px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .menu-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .menu-dropdown {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .menu-dropdown.active {
+            display: block;
+        }
+
+        .menu-item {
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 5px;
+        }
+
+        .menu-item:hover {
+            background: #f3f4f6;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            color: white;
+            margin-bottom: 25px;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .questions-count {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .premium-badge {
+            background: #fbbf24;
+            color: #7c2d12;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .upgrade-btn {
+            background: #fbbf24;
+            color: #7c2d12;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            color: #1f2937;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        .question-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .solution-box {
+            margin-top: 25px;
+            padding: 25px;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-radius: 15px;
+            border: 2px solid #34d399;
+        }
+
+        .solution-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #065f46;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .solution-text {
+            color: #1f2937;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .feature-card {
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .feature-card.purple {
+            background: #f3e8ff;
+        }
+
+        .feature-card.blue {
+            background: #dbeafe;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .feature-title {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .feature-desc {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .premium-cta {
+            margin-top: 25px;
+            background: #fbbf24;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .premium-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .premium-title {
+            color: #7c2d12;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .premium-features {
+            color: #92400e;
+            margin-bottom: 20px;
+        }
+
+        .premium-cta-btn {
+            background: #7c2d12;
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .history-date {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .history-question {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+
+        .history-solution {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 10px;
+            color: #4b5563;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .api-warning {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #92400e;
+        }
+
+        .api-warning strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .api-status {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #1e40af;
+            font-size: 14px;
+        }
+
+        @media (max-width: 640px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">📚</div>
+                <div class="logo-text">EduPadi</div>
+            </div>
+            <button class="menu-btn" onclick="toggleMenu()">☰ Menu</button>
+        </div>
+
+        <!-- Menu Dropdown -->
+        <div id="menuDropdown" class="menu-dropdown">
+            <div class="menu-item" onclick="showPage('home')">🏠 Home</div>
+            <div class="menu-item" onclick="showPage('history')">📚 History</div>
+            <div class="menu-item" onclick="upgradeToPremium()" id="upgradeMenuItem">👑 Upgrade to Premium</div>
+            <div class="menu-item" onclick="resetDailyLimit()" style="color: #ef4444;">🛠️ Reset Limit</div>
+        </div>
+
+        <!-- Home Page -->
+        <div id="homePage">
+            <!-- Status Card -->
+            <div class="status-card">
+                <div class="status-header">
+                    <div>
+                        <div style="font-size: 14px; opacity: 0.9;">Today's Questions</div>
+                        <div class="questions-count" id="questionsCount">0/3</div>
+                    </div>
+                    <div>
+                        <div id="premiumBadge" style="display: none;" class="premium-badge">
+                            👑 Premium
+                        </div>
+                        <button id="upgradeButton" class="upgrade-btn" onclick="upgradeToPremium()">
+                            Upgrade
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="freePlanLimits" style="background: rgba(255,255,255,0.2); border-radius: 10px; padding: 15px; font-size: 14px;">
+                    <div style="font-weight: bold; margin-bottom: 5px;">🎯 Free Plan Limits:</div>
+                    <div>• 3 questions per day</div>
+                    <div>• Triple AI Power</div>
+                </div>
+            </div>
+
+            <!-- Main Card -->
+            <div class="main-card">
+                <div class="api-status">
+                    <strong>🚀 Triple AI Power Active!</strong>
+                    Using 3 free AI APIs for best results
+                </div>
+
+                <h2>Ask Your Homework Question</h2>
+                
+                <textarea 
+                    id="questionInput" 
+                    class="question-input" 
+                    placeholder="Type your question here... (Math, English, Science, etc.)"
+                ></textarea>
+                
+                <button class="submit-btn" onclick="submitQuestion()" id="submitBtn">
+                    <span>🚀 Get Solution</span>
+                </button>
+
+                <div id="solutionBox" style="display: none;" class="solution-box">
+                    <div class="solution-header">
+                        ✓ Solution Ready!
+                    </div>
+                    <div id="solutionText" class="solution-text"></div>
+                    <div id="apiSource" style="margin-top: 10px; font-size: 12px; color: #065f46; font-style: italic;"></div>
+                </div>
+
+                <div id="featuresGrid" class="features-grid">
+                    <div class="feature-card purple">
+                        <div class="feature-icon">🤖</div>
+                        <div class="feature-title">3 AI Models</div>
+                        <div class="feature-desc">Hugging Face, Cohere, OpenRouter</div>
+                    </div>
+                    <div class="feature-card blue">
+                        <div class="feature-icon">📖</div>
+                        <div class="feature-title">Save History</div>
+                        <div class="feature-desc">Review past solutions</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Premium CTA -->
+            <div id="premiumCTA" class="premium-cta">
+                <div class="premium-icon">👑</div>
+                <div class="premium-title">Upgrade to Premium</div>
+                <div class="premium-features">
+                    Unlimited questions • Advanced AI • Ad-free
+                </div>
+                <button class="premium-cta-btn" onclick="upgradeToPremium()">
+                    Only ₦500/month
+                </button>
+            </div>
+        </div>
+
+        <!-- History Page -->
+        <div id="historyPage" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; color: white;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="font-size: 32px;">📖</div>
+                    <h1 style="font-size: 28px; font-weight: bold;">Your History</h1>
+                </div>
+                <button class="menu-btn" onclick="showPage('home')">← Back</button>
+            </div>
+
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION - TRIPLE AI API SETUP
+        // ============================================
+        const CONFIG = {
+            // Hugging Face (Free - get token from https://huggingface.co/settings/tokens)
+            HUGGING_FACE_TOKEN: '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', // Replace with your free token
+            
+            // Cohere (Free tier - get from https://dashboard.cohere.com/)
+            COHERE_API_KEY: '6uq8t8tSAzGuPUHHcFypaSrslbZAm2DspTQ80ZB9', // Replace with your free key
+            
+            // OpenRouter (Free models)
+            OPENROUTER_API_KEY: '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', // Public free key
+            
+            PREMIUM_PRICE: 500,
+            FREE_QUESTIONS_LIMIT: 3
+        };
+
+        // ============================================
+        // STATE MANAGEMENT
+        // ============================================
+        let state = {
+            currentPage: 'home',
+            isPremium: false,
+            questionsToday: 0,
+            history: [],
+            loading: false,
+            currentApi: 'smart' // Track which API provided the response
+        };
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function init() {
+            loadState();
+            updateUI();
+        }
+
+        function loadState() {
+            const savedHistory = localStorage.getItem('edupadiHistory');
+            const savedQuestions = localStorage.getItem('edupadiQuestionsToday');
+            const savedDate = localStorage.getItem('edupadiLastDate');
+            const savedPremium = localStorage.getItem('edupadiPremium');
+            
+            const today = new Date().toDateString();
+            
+            if (savedHistory) state.history = JSON.parse(savedHistory);
+            if (savedPremium === 'true') state.isPremium = true;
+            
+            if (savedDate !== today) {
+                state.questionsToday = 0;
+                localStorage.setItem('edupadiLastDate', today);
+                localStorage.setItem('edupadiQuestionsToday', '0');
+            } else if (savedQuestions) {
+                state.questionsToday = parseInt(savedQuestions);
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('edupadiHistory', JSON.stringify(state.history));
+            localStorage.setItem('edupadiQuestionsToday', state.questionsToday.toString());
+            localStorage.setItem('edupadiPremium', state.isPremium.toString());
+        }
+
+        // ============================================
+        // UI FUNCTIONS
+        // ============================================
+        function updateUI() {
+            const countText = state.isPremium ? '∞' : `${state.questionsToday}/3`;
+            document.getElementById('questionsCount').textContent = countText;
+            
+            if (state.isPremium) {
+                document.getElementById('premiumBadge').style.display = 'flex';
+                document.getElementById('upgradeButton').style.display = 'none';
+                document.getElementById('freePlanLimits').style.display = 'none';
+                document.getElementById('premiumCTA').style.display = 'none';
+                document.getElementById('upgradeMenuItem').style.display = 'none';
+            }
+            
+            renderHistory();
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('menuDropdown');
+            menu.classList.toggle('active');
+        }
+
+        function showPage(page) {
+            state.currentPage = page;
+            document.getElementById('homePage').style.display = page === 'home' ? 'block' : 'none';
+            document.getElementById('historyPage').style.display = page === 'history' ? 'block' : 'none';
+            document.getElementById('menuDropdown').classList.remove('active');
+        }
+
+        function resetDailyLimit() {
+            state.questionsToday = 0;
+            localStorage.setItem('edupadiQuestionsToday', '0');
+            localStorage.setItem('edupadiLastDate', new Date().toDateString());
+            updateUI();
+            alert('Daily limit reset! You can now ask 3 more questions.');
+        }
+
+        // ============================================
+        // QUESTION SUBMISSION
+        // ============================================
+        async function submitQuestion() {
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                alert('Please enter a question!');
+                return;
+            }
+            
+            if (!state.isPremium && state.questionsToday >= CONFIG.FREE_QUESTIONS_LIMIT) {
+                alert('Daily limit reached! Upgrade to Premium for unlimited questions.');
+                return;
+            }
+            
+            setLoading(true);
+            document.getElementById('solutionBox').style.display = 'none';
+            document.getElementById('featuresGrid').style.display = 'none';
+            document.getElementById('apiSource').textContent = '';
+            
+            try {
+                const solution = await getTripleAISolution(question);
+                displaySolution(solution);
+                saveToHistory(question, solution);
+                
+                state.questionsToday++;
+                saveState();
+                updateUI();
+                
+                questionInput.value = '';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again!');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function setLoading(isLoading) {
+            state.loading = isLoading;
+            const btn = document.getElementById('submitBtn');
+            const questionInput = document.getElementById('questionInput');
+            
+            if (isLoading) {
+                btn.innerHTML = '<div class="spinner"></div><span>Solving with AI...</span>';
+                btn.disabled = true;
+                questionInput.disabled = true;
+            } else {
+                btn.innerHTML = '<span>🚀 Get Solution</span>';
+                btn.disabled = false;
+                questionInput.disabled = false;
+            }
+        }
+
+        // ============================================
+        // TRIPLE AI API INTEGRATION
+        // ============================================
+        async function getTripleAISolution(question) {
+            state.currentApi = 'smart'; // Default fallback
+            
+            // Try Hugging Face first
+            try {
+                console.log('Trying Hugging Face...');
+                const hfResult = await getHuggingFaceSolution(question);
+                if (hfResult && hfResult.length > 20) {
+                    state.currentApi = 'Hugging Face';
+                    return hfResult;
+                }
+            } catch (error) {
+                console.log('Hugging Face failed:', error.message);
+            }
+            
+            // Try Cohere second
+            try {
+                console.log('Trying Cohere...');
+                const cohereResult = await getCohereSolution(question);
+                if (cohereResult && cohereResult.length > 20) {
+                    state.currentApi = 'Cohere AI';
+                    return cohereResult;
+                }
+            } catch (error) {
+                console.log('Cohere failed:', error.message);
+            }
+            
+            // Try OpenRouter third
+            try {
+                console.log('Trying OpenRouter...');
+                const openRouterResult = await getOpenRouterSolution(question);
+                if (openRouterResult && openRouterResult.length > 20) {
+                    state.currentApi = 'OpenRouter';
+                    return openRouterResult;
+                }
+            } catch (error) {
+                console.log('OpenRouter failed:', error.message);
+            }
+            
+            // Final fallback to smart engine
+            console.log('All APIs failed, using smart engine');
+            return getSmartSolution(question);
+        }
+
+        // 1. Hugging Face API
+        async function getHuggingFaceSolution(question) {
+            if (!CONFIG.HUGGING_FACE_TOKEN || CONFIG.HUGGING_FACE_TOKEN === 'hf_your_token_here') {
+                throw new Error('No Hugging Face token configured');
+            }
+
+            const response = await fetch(
+                "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large",
+                {
+                    headers: { Authorization: `Bearer ${CONFIG.HUGGING_FACE_TOKEN}` },
+                    method: "POST",
+                    body: JSON.stringify({ 
+                        inputs: `You are a helpful Nigerian tutor. Provide step-by-step homework help for: ${question}. Format with clear steps and explanations.`,
+                        parameters: {
+                            max_length: 500,
+                            temperature: 0.7,
+                            do_sample: true
+                        }
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Hugging Face API error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            return result[0]?.generated_text || result.generated_text || "I'd be happy to help with that homework question!";
+        }
+
+        // 2. Cohere API
+        async function getCohereSolution(question) {
+            if (!CONFIG.COHERE_API_KEY || CONFIG.COHERE_API_KEY === 'your_cohere_key_here') {
+                throw new Error('No Cohere API key configured');
+            }
+
+            const response = await fetch('https://api.cohere.ai/v1/generate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${CONFIG.COHERE_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: 'command',
+                    prompt: `As a helpful Nigerian tutor, provide clear step-by-step homework help. Be educational and encouraging.
+
+Question: ${question}
+
+Please provide:
+1. Brief concept explanation
+2. Step-by-step solution
+3. Final answer
+4. Helpful study tip
+
+Format your response clearly:`,
+                    max_tokens: 800,
+                    temperature: 0.7,
+                    k: 0,
+                    stop_sequences: [],
+                    return_likelihoods: 'NONE'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Cohere API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.generations[0].text;
+        }
+
+        // 3. OpenRouter API
+        async function getOpenRouterSolution(question) {
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${CONFIG.OPENROUTER_API_KEY}`,
+                    'HTTP-Referer': 'https://edupadi.com',
+                    'X-Title': 'EduPadi Homework Helper'
+                },
+                body: JSON.stringify({
+                    model: 'google/gemma-7b-it:free',
+                    messages: [{
+                        role: 'user',
+                        content: `You are EduPadi, a helpful homework tutor for Nigerian students. Provide clear, step-by-step solutions in simple English.
+
+Question: ${question}
+
+Please format your response with:
+1. Brief concept explanation
+2. Step-by-step solution  
+3. Final answer
+4. Helpful study tip`
+                    }],
+                    max_tokens: 1000,
+                    temperature: 0.7
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(`OpenRouter error: ${error.error?.message || response.status}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        // 4. Smart Engine Fallback
+        async function getSmartSolution(question) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            const lowerQuestion = question.toLowerCase();
+            
+            if (lowerQuestion.includes('math') || /\d+[\+\-\*\/]/.test(question)) {
+                return `**Mathematical Solution Approach**
+
+For: "${question}"
+
+1. **Problem Analysis**: Identify the mathematical operation needed
+2. **Step-by-Step Calculation**:
+   - Break down the problem into smaller parts
+   - Apply the appropriate formula or method
+   - Show each calculation clearly
+   - Verify the result
+
+3. **Final Answer**: [Your calculated answer here]
+
+4. **Learning Tip**: Practice similar problems to build confidence in mathematical reasoning!`;
+            }
+            else if (lowerQuestion.includes('science') || lowerQuestion.includes('biology') || lowerQuestion.includes('chemistry') || lowerQuestion.includes('physics')) {
+                return `**Scientific Approach**
+
+Regarding: "${question}"
+
+1. **Scientific Concept**: Explain the relevant principle
+2. **Step-by-Step Analysis**:
+   - Observation and hypothesis
+   - Experimental approach
+   - Data interpretation
+   - Conclusion
+
+3. **Key Finding**: [Main scientific insight]
+
+4. **Study Tip**: Relate scientific concepts to real-world examples for better understanding!`;
+            }
+            else {
+                return `**Learning Strategy**
+
+Question: "${question}"
+
+1. **Understanding the Concept**: Break down what's being asked
+2. **Systematic Approach**:
+   - Research and gather information
+   - Organize your thoughts logically
+   - Apply critical thinking
+   - Review and refine
+
+3. **Solution Path**: [Your approach to solving this]
+
+4. **Success Tip**: Consistent practice and asking questions are key to academic success!`;
+            }
+        }
+
+        // ============================================
+        // DISPLAY & HISTORY
+        // ============================================
+        function displaySolution(solution) {
+            document.getElementById('solutionText').textContent = solution;
+            document.getElementById('solutionBox').style.display = 'block';
+            document.getElementById('featuresGrid').style.display = 'grid';
+            
+            // Show which API provided the response
+            if (state.currentApi !== 'smart') {
+                document.getElementById('apiSource').textContent = `Powered by ${state.currentApi} AI`;
+            } else {
+                document.getElementById('apiSource').textContent = `Using smart learning engine`;
+            }
+        }
+
+        function saveToHistory(question, solution) {
+            const entry = {
+                id: Date.now(),
+                question: question,
+                solution: solution,
+                timestamp: new Date().toISOString(),
+                api: state.currentApi
+            };
+            
+            state.history = [entry, ...state.history].slice(0, 20);
+            saveState();
+        }
+
+        function renderHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (state.history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="main-card empty-state">
+                        <div class="empty-icon">📚</div>
+                        <h3 style="color: #1f2937; margin-bottom: 10px;">No questions yet!</h3>
+                        <p style="color: #6b7280; margin-bottom: 20px;">Your solved questions will appear here</p>
+                        <button class="submit-btn" onclick="showPage('home')" style="max-width: 250px; margin: 0 auto;">
+                            Ask Your First Question
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyList.innerHTML = state.history.map(item => `
+                <div class="history-item">
+                    <div class="history-date">
+                        ${new Date(item.timestamp).toLocaleString()} 
+                        <span style="color: #3b82f6; font-size: 12px;">• ${item.api}</span>
+                    </div>
+                    <div class="history-question">Q: ${item.question}</div>
+                    <div class="history-solution">${item.solution.substring(0, 200)}...</div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // PREMIUM FEATURES
+        // ============================================
+        function upgradeToPremium() {
+            const confirmed = confirm(
+                `Upgrade to Premium for ₦${CONFIG.PREMIUM_PRICE}/month?\n\n` +
+                '✓ Unlimited questions\n' +
+                '✓ Advanced AI models\n' +
+                '✓ Priority support\n' +
+                '✓ Ad-free experience'
+            );
+            
+            if (confirmed) {
+                state.isPremium = true;
+                saveState();
+                updateUI();
+                alert('Welcome to Premium! 🎉\n\nIn production, this would process payment via Flutterwave/Paystack.');
+            }
+        }
+
+        // ============================================
+        // START THE APP
+        // ============================================
+        init();
+    </script>
+</body>
+</html>
