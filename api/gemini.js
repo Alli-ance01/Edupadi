@@ -46,13 +46,4 @@ export default async function handler(req, res) {
     console.error("Server error:", err);
     res.status(500).json({ error: "Server error" });
   }
-        }
-        // Gemini might return text in different fields; adjust if needed
-        const answer = data.output_text || data.output?.[0]?.content?.[0]?.text || "No response";
-
-        res.status(200).json({ answer });
-    } catch (err) {
-        console.error("Gemini API error:", err);
-        res.status(500).json({ error: err.message || "Server error" });
-    }
 }
