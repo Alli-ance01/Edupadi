@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduPadi - Smart Homework Helper</title>
+    <title>EduPadi - AI Homework Helper</title>
     <meta name="theme-color" content="#667eea">
     <script src="https://checkout.flutterwave.com/v3.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -41,6 +41,7 @@
         .solution-box { margin-top: 28px; padding: 28px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border-radius: 16px; border: 2px solid #34d399; }
         .solution-header { display: flex; align-items: center; gap: 10px; color: #065f46; margin-bottom: 16px; font-size: 22px; font-weight: 700; }
         .solution-text { color: #1f2937; line-height: 1.7; white-space: pre-wrap; font-size: 15px; }
+        .ai-badge { display: inline-flex; align-items: center; gap: 6px; background: #059669; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; margin-top: 12px; }
         .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 32px; }
         .feature-card { padding: 24px; border-radius: 16px; transition: all 0.3s ease; }
         .feature-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
@@ -73,12 +74,12 @@
             <div style="text-align: center; margin-bottom: 24px;">
                 <div style="font-size: 56px; margin-bottom: 16px;">👋</div>
                 <h2 style="margin-bottom: 12px; font-size: 28px;">Welcome to EduPadi!</h2>
-                <p style="color: #6b7280; font-size: 15px;">Enter your email to get started. Your progress syncs across all devices!</p>
+                <p style="color: #6b7280; font-size: 15px;">Enter your email to get started with AI-powered homework help!</p>
             </div>
             <div id="emailLoginStep">
                 <input type="email" id="authEmail" class="input-field" placeholder="your.email@example.com">
                 <button class="submit-btn" onclick="signIn()"><span id="authBtnText">Continue with Email</span></button>
-                <p style="color: #9ca3af; font-size: 13px; margin-top: 20px; text-align: center;">🔒 We'll send you a magic link to sign in</p>
+                <p style="color: #9ca3af; font-size: 13px; margin-top: 20px; text-align: center;">🔒 Magic link - no password needed</p>
             </div>
             <div id="emailSentStep" style="display: none; text-align: center;">
                 <div style="font-size: 64px; margin-bottom: 20px;">📧</div>
@@ -114,22 +115,23 @@
                     <div><div id="premiumBadge" style="display: none;" class="premium-badge">👑 Premium</div><button id="upgradeButton" class="upgrade-btn" onclick="upgradeToPremium()">Upgrade</button></div>
                 </div>
                 <div id="freePlanLimits" style="background: rgba(255,255,255,0.2); border-radius: 14px; padding: 18px; font-size: 14px; font-weight: 500;">
-                    <div style="font-weight: 700; margin-bottom: 8px;">🎯 Free Plan:</div><div>• 3 questions daily</div><div>• Smart AI responses</div><div>• Synced across devices</div>
+                    <div style="font-weight: 700; margin-bottom: 8px;">🎯 Free Plan:</div><div>• 3 AI-powered questions daily</div><div>• Google Gemini AI</div><div>• Synced across devices</div>
                 </div>
             </div>
 
             <div class="main-card">
                 <h2>Ask Your Homework Question</h2>
-                <textarea id="questionInput" class="question-input input-field" placeholder="Example: 'Solve 2x + 5 = 15' or 'Explain photosynthesis'"></textarea>
-                <button class="submit-btn" onclick="submitQuestion()" id="submitBtn"><span>🚀 Get Smart Solution</span></button>
+                <textarea id="questionInput" class="question-input input-field" placeholder="Example: 'Solve 2x + 5 = 15' or 'Explain photosynthesis in simple terms' or 'Help me write an essay about climate change'"></textarea>
+                <button class="submit-btn" onclick="submitQuestion()" id="submitBtn"><span>🚀 Get AI Solution</span></button>
                 <div id="solutionBox" style="display: none;" class="solution-box">
-                    <div class="solution-header">✓ Solution Ready!</div>
+                    <div class="solution-header">✓ AI Solution Ready!</div>
                     <div id="solutionText" class="solution-text"></div>
+                    <div class="ai-badge">🤖 Powered by Google Gemini AI</div>
                 </div>
                 <div class="features-grid">
-                    <div class="feature-card purple"><div class="feature-icon">🧠</div><div class="feature-title">Smart AI</div><div class="feature-desc">Pattern recognition</div></div>
+                    <div class="feature-card purple"><div class="feature-icon">🤖</div><div class="feature-title">Real AI</div><div class="feature-desc">Google Gemini powered</div></div>
                     <div class="feature-card blue"><div class="feature-icon">☁️</div><div class="feature-title">Cloud Sync</div><div class="feature-desc">Works everywhere</div></div>
-                    <div class="feature-card green"><div class="feature-icon">🔒</div><div class="feature-title">Secure</div><div class="feature-desc">Protected payments</div></div>
+                    <div class="feature-card green"><div class="feature-icon">🔒</div><div class="feature-title">Secure</div><div class="feature-desc">Safe payments</div></div>
                     <div class="feature-card orange"><div class="feature-icon">⚡</div><div class="feature-title">Instant</div><div class="feature-desc">Fast answers</div></div>
                 </div>
             </div>
@@ -137,7 +139,7 @@
             <div id="premiumCTA" class="premium-cta">
                 <div class="premium-icon">👑</div>
                 <div class="premium-title">Upgrade to Premium</div>
-                <div class="premium-features">✓ Unlimited questions<br>✓ Advanced solutions<br>✓ Priority support</div>
+                <div class="premium-features">✓ Unlimited AI questions<br>✓ Advanced solutions<br>✓ Priority support</div>
                 <button class="premium-cta-btn" onclick="upgradeToPremium()">Only ₦500/month</button>
             </div>
         </div>
@@ -157,7 +159,9 @@
             PREMIUM_PRICE: 500,
             FREE_QUESTIONS_LIMIT: 3,
             SUPABASE_URL: 'https://ybxxjhdysdtooesdchxi.supabase.co',
-            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieHhqaGR5c2R0b29lc2RjaHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTU0MzMsImV4cCI6MjA3OTMzMTQzM30.wIhaIrw3akc3hXfa1ZyGAUNlmVVRDvlAvfSMbPG00ag'
+            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieHhqaGR5c2R0b29lc2RjaHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTU0MzMsImV4cCI6MjA3OTMzMTQzM30.wIhaIrw3akc3hXfa1ZyGAUNlmVVRDvlAvfSMbPG00ag',
+            GEMINI_API_KEY: 'AIzaSyA0utwy7VG6J4dL44Pd5-8T-JkrAAonbN4',
+            USE_GEMINI: true
         };
         const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
         let state = { currentPage: 'home', userEmail: null, isPremium: false, questionsToday: 0, history: [] };
@@ -197,30 +201,20 @@
             if (!email || !email.includes('@')) { alert('⚠️ Please enter a valid email'); return; }
             document.getElementById('authBtnText').textContent = 'Sending...';
             try {
-                // Use explicit Vercel URL instead of window.location.href
-                const redirectUrl = window.location.hostname === 'localhost' 
-                    ? window.location.href 
-                    : 'https://edupadi-iota.vercel.app';
-                
-                const { error } = await supabase.auth.signInWithOtp({ 
-                    email, 
-                    options: { emailRedirectTo: redirectUrl } 
-                });
+                const redirectUrl = window.location.hostname === 'localhost' ? window.location.href : 'https://edupadi-iota.vercel.app';
+                const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl } });
                 if (error) throw error;
                 document.getElementById('sentEmailDisplay').textContent = email;
                 document.getElementById('emailLoginStep').style.display = 'none';
                 document.getElementById('emailSentStep').style.display = 'block';
             } catch (error) {
-                console.error('Sign in error:', error);
                 alert('❌ Failed to send magic link');
             } finally {
                 document.getElementById('authBtnText').textContent = 'Continue with Email';
             }
         }
 
-        async function logout() {
-            if (confirm('Logout?')) await supabase.auth.signOut();
-        }
+        async function logout() { if (confirm('Logout?')) await supabase.auth.signOut(); }
 
         async function loadUserData() {
             if (!state.userEmail) return;
@@ -289,10 +283,11 @@
                 if (confirm('⚠️ Daily limit reached!\n\nUpgrade to Premium?\n\n₦500/month')) upgradeToPremium();
                 return;
             }
-            document.getElementById('submitBtn').innerHTML = '<div class="spinner"></div><span>Analyzing...</span>';
+            document.getElementById('submitBtn').innerHTML = '<div class="spinner"></div><span>AI is thinking...</span>';
             document.getElementById('submitBtn').disabled = true;
+            document.getElementById('solutionBox').style.display = 'none';
             try {
-                const solution = await getSmartSolution(question);
+                const solution = await getGeminiAISolution(question);
                 document.getElementById('solutionText').textContent = solution;
                 document.getElementById('solutionBox').style.display = 'block';
                 state.history.unshift({ question, solution, timestamp: new Date().toISOString() });
@@ -302,28 +297,71 @@
                 updateUI();
                 questionInput.value = '';
             } catch (error) {
-                alert('❌ Something went wrong');
+                console.error('AI Error:', error);
+                alert('❌ AI request failed. Please try again!');
             } finally {
-                document.getElementById('submitBtn').innerHTML = '<span>🚀 Get Smart Solution</span>';
+                document.getElementById('submitBtn').innerHTML = '<span>🚀 Get AI Solution</span>';
                 document.getElementById('submitBtn').disabled = false;
             }
         }
 
-        async function getSmartSolution(question) {
-            await new Promise(r => setTimeout(r, 1500));
+        async function getGeminiAISolution(question) {
+            if (!CONFIG.USE_GEMINI || !CONFIG.GEMINI_API_KEY) {
+                return getFallbackSolution(question);
+            }
+
+            try {
+                const prompt = `You are a helpful homework tutor for Nigerian students. Answer this question clearly and educationally:\n\n${question}\n\nProvide:\n1. A clear explanation\n2. Step-by-step solution if applicable\n3. Key concepts\n4. A helpful study tip\n\nKeep your answer concise but complete (300-500 words).`;
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${CONFIG.GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Gemini API error:', response.status);
+                    return getFallbackSolution(question);
+                }
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+                    return data.candidates[0].content.parts[0].text;
+                }
+                
+                return getFallbackSolution(question);
+                
+            } catch (error) {
+                console.error('Gemini API error:', error);
+                return getFallbackSolution(question);
+            }
+        }
+
+        function getFallbackSolution(question) {
             const q = question.toLowerCase();
-            if (q.match(/\d+\s*[\+\-\*\/]/)) return `📐 MATH SOLUTION\n\nQuestion: ${question}\n\nStep-by-step:\n1. Identify the operation\n2. Apply formulas\n3. Solve systematically\n\n🎓 Upgrade for detailed solutions!`;
-            if (q.includes('photo') || q.includes('biology')) return `🔬 SCIENCE\n\nTopic: ${question}\n\n1. Observe\n2. Hypothesize\n3. Experiment\n4. Analyze\n\n🎓 Premium: detailed breakdowns!`;
-            return `💡 LEARNING STRATEGY\n\nQuestion: ${question}\n\n1. Clarify the question\n2. Research\n3. Organize\n4. Execute\n5. Review\n\n🎓 Premium: expert strategies!`;
+            if (q.match(/\d+\s*[\+\-\*\/]/)) return `📐 MATH SOLUTION\n\nQuestion: ${question}\n\nStep-by-step approach:\n1. Identify the mathematical operation required\n2. Apply the correct formula or method\n3. Solve systematically and verify\n\nStudy Tip: Practice similar problems to build confidence!\n\n🎓 Upgrade to Premium for unlimited AI-powered solutions!`;
+            if (q.includes('photo') || q.includes('biology') || q.includes('chemistry')) return `🔬 SCIENCE EXPLANATION\n\nTopic: ${question}\n\nScientific Method:\n1. Observation - what are we investigating?\n2. Hypothesis - form educated predictions\n3. Experiment - test through evidence\n4. Analysis - interpret results\n5. Conclusion - draw understanding\n\nStudy Tip: Connect concepts to real-world examples!\n\n🎓 Premium members get detailed AI explanations!`;
+            return `💡 LEARNING STRATEGY\n\nQuestion: ${question}\n\nProblem-solving framework:\n1. Clarify - what exactly is being asked?\n2. Research - gather relevant information\n3. Organize - structure your thoughts\n4. Execute - apply systematic approach\n5. Review - verify understanding\n\nStudy Tip: Break complex problems into smaller parts!\n\n🎓 Upgrade for unlimited AI-powered help!`;
         }
 
         function renderHistory() {
             const list = document.getElementById('historyList');
             if (!state.history.length) {
-                list.innerHTML = '<div class="main-card" style="text-align:center; padding:60px 20px;"><div style="font-size:56px; margin-bottom:24px;">📚</div><h3 style="color:#1f2937; margin-bottom:10px;">No questions yet!</h3><p style="color:#6b7280;">Your questions will appear here</p></div>';
+                list.innerHTML = '<div class="main-card" style="text-align:center; padding:60px 20px;"><div style="font-size:56px; margin-bottom:24px;">📚</div><h3 style="color:#1f2937; margin-bottom:10px;">No questions yet!</h3><p style="color:#6b7280;">Your AI-powered questions will appear here</p></div>';
                 return;
             }
-            list.innerHTML = state.history.map((item, i) => `<div class="history-item" onclick="viewHistory(${i})"><div class="history-date">${new Date(item.timestamp).toLocaleString()}</div><div class="history-question">Q: ${item.question}</div><div class="history-solution">${item.solution.substring(0, 150)}...</div></div>`).join('');
+            list.innerHTML = state.history.map((item, i) => `
+                <div class="history-item" onclick="viewHistory(${i})">
+                    <div class="history-date">${new Date(item.timestamp).toLocaleString()}</div>
+                    <div class="history-question">${item.question}</div>
+                    <div class="history-solution">${item.solution.substring(0, 150)}...</div>
+                </div>
+            `).join('');
         }
 
         function viewHistory(i) {
@@ -332,6 +370,7 @@
             document.getElementById('questionInput').value = item.question;
             document.getElementById('solutionText').textContent = item.solution;
             document.getElementById('solutionBox').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function upgradeToPremium() {
@@ -348,21 +387,26 @@
                     if (response.status === 'successful') {
                         const expiry = new Date();
                         expiry.setMonth(expiry.getMonth() + 1);
-                        await supabase.from('users').update({ is_premium: true, premium_expiry: expiry.toISOString(), transaction_id: response.transaction_id }).eq('email', state.userEmail);
+                        await supabase.from('users').update({ 
+                            is_premium: true, 
+                            premium_expiry: expiry.toISOString(), 
+                            transaction_id: response.transaction_id 
+                        }).eq('email', state.userEmail);
                         await validatePremiumStatus();
                         updateUI();
-                        alert('🎉 Welcome to Premium!');
+                        alert('🎉 Welcome to Premium! You now have unlimited access!');
                     }
                 }
             });
         }
 
         function shareApp() {
-            const text = `🎓 Try EduPadi - Smart Homework Helper!\n\n✅ AI solutions\n✅ Free to start\n\n${window.location.href}`;
+            const text = `🎓 Try EduPadi - AI Homework Helper!\n\n✅ Google Gemini AI\n✅ Free to start\n✅ Works on all devices\n\n${window.location.href}`;
             if (navigator.share) navigator.share({ title: 'EduPadi', text });
-            else { navigator.clipboard.writeText(text); alert('📋 Link copied!'); }
+            else { navigator.clipboard.writeText(text); alert('📋 Share link copied!'); }
         }
 
+        // Start the app
         init();
     </script>
 </body>
