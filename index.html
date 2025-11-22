@@ -52,12 +52,19 @@
         .premium-cta { margin-top: 25px; background: #fbbf24; border-radius: 20px; padding: 30px; text-align: center; }
         .premium-title { color: #7c2d12; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
         .premium-cta-btn { background: #7c2d12; color: white; border: none; padding: 15px 35px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .api-status { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 15px; margin-bottom: 20px; color: #92400e; font-size: 14px; }
         .user-info { background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 10px 15px; font-size: 14px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
         .logout-btn { background: rgba(255, 255, 255, 0.2); border: none; color: white; padding: 5px 15px; border-radius: 8px; cursor: pointer; font-size: 13px; }
         .auth-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .auth-modal.active { display: flex; }
         .auth-card { background: white; border-radius: 20px; padding: 40px; max-width: 400px; width: 90%; }
+        .history-item { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; cursor: pointer; transition: all 0.2s; }
+        .history-item:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .history-date { color: #6b7280; font-size: 13px; margin-bottom: 8px; }
+        .history-question { color: #1f2937; font-weight: 600; margin-bottom: 5px; }
+        .history-preview { color: #6b7280; font-size: 14px; }
+        .empty-state { background: white; border-radius: 15px; padding: 40px; text-align: center; }
+        .empty-icon { font-size: 64px; margin-bottom: 15px; }
+        .empty-text { color: #6b7280; font-size: 16px; }
         @media (max-width: 640px) {
             .features-grid { grid-template-columns: 1fr; }
             .logo-text { font-size: 24px; }
@@ -122,9 +129,6 @@
             </div>
 
             <div class="main-card">
-                <div class="api-status">
-                    <strong>⚠️ SETUP REQUIRED:</strong> Backend authentication ready! Connect your Supabase database to enable cloud sync. Check the instructions below.
-                </div>
                 <h2>Ask Your Homework Question</h2>
                 <textarea id="questionInput" class="question-input input-field" placeholder="Example: 'Solve 2x + 5 = 15' or 'Explain photosynthesis'"></textarea>
                 <button class="submit-btn" onclick="submitQuestion()" id="submitBtn"><span>🚀 Get Smart Solution</span></button>
@@ -167,13 +171,13 @@
 
     <script>
         const CONFIG = {
-    FLUTTERWAVE_PUBLIC_KEY: 'FLWPUBK_TEST-30227ae446eeecdaae2054e3ef1f01d6-X',
-    PREMIUM_PRICE: 500,
-    FREE_QUESTIONS_LIMIT: 3,
-    SUPABASE_URL: 'https://ybxxjhdysdtooesdchxi.supabase.co',
-    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieHhqaGR5c2R0b29lc2RjaHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTU0MzMsImV4cCI6MjA3OTMzMTQzM30.wIhaIrw3akc3hXfa1ZyGAUNlmVVRDvlAvfSMbPG00ag',
-    USE_BACKEND: true
-};
+            FLUTTERWAVE_PUBLIC_KEY: 'FLWPUBK_TEST-30227ae446eeecdaae2054e3ef1f01d6-X',
+            PREMIUM_PRICE: 500,
+            FREE_QUESTIONS_LIMIT: 3,
+            SUPABASE_URL: 'https://ybxxjhdysdtooesdchxi.supabase.co',
+            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieHhqaGR5c2R0b29lc2RjaHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTU0MzMsImV4cCI6MjA3OTMzMTQzM30.wIhaIrw3akc3hXfa1ZyGAUNlmVVRDvlAvfSMbPG00ag',
+            USE_BACKEND: true
+        };
 
         let state = {
             currentPage: 'home',
@@ -211,8 +215,12 @@
             
             try {
                 const response = await fetch(url, options);
-                if (!response.ok) throw new Error('Backend request failed');
-                return await response.json();
+                if (!response.ok) {
+                    console.error('Backend response not ok:', response.status);
+                    return null;
+                }
+                const result = await response.json();
+                return result;
             } catch (error) {
                 console.error('Backend error:', error);
                 return null;
@@ -221,13 +229,13 @@
 
         async function checkUserPremiumStatus(email) {
             if (!CONFIG.USE_BACKEND) {
-                // Fallback to localStorage
                 return localStorage.getItem('edupadiPremium') === 'true';
             }
             
             const result = await callBackend(`users?email=eq.${encodeURIComponent(email)}&select=*`);
             if (result && result.length > 0) {
                 const user = result[0];
+                if (!user.premium_expiry) return false;
                 const now = new Date();
                 const expiry = new Date(user.premium_expiry);
                 return user.is_premium && expiry > now;
@@ -237,15 +245,23 @@
 
         async function getUserData(email) {
             if (!CONFIG.USE_BACKEND) {
+                // Fallback to localStorage
+                const storedHistory = localStorage.getItem('edupadiHistory');
                 return {
                     questions_today: parseInt(localStorage.getItem('edupadiQuestionsToday') || '0'),
-                    history: JSON.parse(localStorage.getItem('edupadiHistory') || '[]')
+                    history: storedHistory ? JSON.parse(storedHistory) : []
                 };
             }
             
             const result = await callBackend(`users?email=eq.${encodeURIComponent(email)}&select=*`);
+            
             if (result && result.length > 0) {
-                return result[0];
+                const user = result[0];
+                // Ensure history is an array
+                if (!user.history || !Array.isArray(user.history)) {
+                    user.history = [];
+                }
+                return user;
             }
             
             // Create new user
@@ -253,10 +269,17 @@
                 email: email,
                 is_premium: false,
                 questions_today: 0,
+                history: [],
                 created_at: new Date().toISOString()
             };
-            await callBackend('users', 'POST', newUser);
-            return newUser;
+            
+            try {
+                const created = await callBackend('users', 'POST', newUser);
+                return (created && created.length > 0) ? created[0] : newUser;
+            } catch (error) {
+                console.error('Error creating user:', error);
+                return newUser;
+            }
         }
 
         async function updateUserData(email, updates) {
@@ -268,10 +291,19 @@
                 if (updates.is_premium !== undefined) {
                     localStorage.setItem('edupadiPremium', updates.is_premium.toString());
                 }
-                return;
+                if (updates.history !== undefined) {
+                    localStorage.setItem('edupadiHistory', JSON.stringify(updates.history));
+                }
+                return true;
             }
             
-            await callBackend(`users?email=eq.${encodeURIComponent(email)}`, 'PATCH', updates);
+            try {
+                await callBackend(`users?email=eq.${encodeURIComponent(email)}`, 'PATCH', updates);
+                return true;
+            } catch (error) {
+                console.error('Error updating user:', error);
+                return false;
+            }
         }
 
         // ============================================
@@ -282,6 +314,8 @@
             const savedEmail = localStorage.getItem('edupadiUserEmail');
             if (savedEmail) {
                 state.userEmail = savedEmail;
+                document.getElementById('userEmailDisplay').textContent = savedEmail;
+                document.getElementById('userInfo').style.display = 'flex';
                 loadUserData();
             } else {
                 showAuthModal();
@@ -325,21 +359,35 @@
         }
 
         async function loadUserData() {
-            const userData = await getUserData(state.userEmail);
-            state.isPremium = await checkUserPremiumStatus(state.userEmail);
-            state.questionsToday = userData.questions_today || 0;
-            state.history = userData.history || [];
-            
-            // Reset daily count if new day
-            const savedDate = localStorage.getItem('edupadiLastDate');
-            const today = new Date().toDateString();
-            if (savedDate !== today) {
-                state.questionsToday = 0;
-                localStorage.setItem('edupadiLastDate', today);
-                await updateUserData(state.userEmail, { questions_today: 0 });
+            try {
+                const userData = await getUserData(state.userEmail);
+                
+                state.isPremium = await checkUserPremiumStatus(state.userEmail);
+                state.questionsToday = userData.questions_today || 0;
+                
+                // Load history properly - ensure it's always an array
+                if (userData.history && Array.isArray(userData.history)) {
+                    state.history = userData.history;
+                } else {
+                    state.history = [];
+                }
+                
+                console.log('Loaded history:', state.history.length, 'items');
+                
+                // Reset daily count if new day
+                const savedDate = localStorage.getItem('edupadiLastDate');
+                const today = new Date().toDateString();
+                if (savedDate !== today) {
+                    state.questionsToday = 0;
+                    localStorage.setItem('edupadiLastDate', today);
+                    await updateUserData(state.userEmail, { questions_today: 0 });
+                }
+                
+                updateUI();
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                updateUI();
             }
-            
-            updateUI();
         }
 
         function logout() {
@@ -364,6 +412,10 @@
                 document.getElementById('premiumCTA').style.display = 'none';
                 document.getElementById('upgradeMenuItem').style.display = 'none';
             }
+            
+            if (state.currentPage === 'history') {
+                renderHistory();
+            }
         }
 
         function toggleMenu() {
@@ -375,6 +427,61 @@
             document.getElementById('homePage').style.display = page === 'home' ? 'block' : 'none';
             document.getElementById('historyPage').style.display = page === 'history' ? 'block' : 'none';
             document.getElementById('menuDropdown').classList.remove('active');
+            
+            if (page === 'history') {
+                renderHistory();
+            }
+        }
+
+        function renderHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (!state.history || state.history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📚</div>
+                        <div class="empty-text">No questions asked yet</div>
+                        <div style="color: #9ca3af; font-size: 14px; margin-top: 10px;">Your question history will appear here</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyList.innerHTML = state.history
+                .slice()
+                .reverse()
+                .map((item, index) => {
+                    const date = new Date(item.timestamp);
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    const preview = item.solution.substring(0, 80) + (item.solution.length > 80 ? '...' : '');
+                    
+                    return `
+                        <div class="history-item" onclick="viewHistoryItem(${state.history.length - 1 - index})">
+                            <div class="history-date">${formattedDate}</div>
+                            <div class="history-question">${item.question}</div>
+                            <div class="history-preview">${preview}</div>
+                        </div>
+                    `;
+                })
+                .join('');
+        }
+
+        function viewHistoryItem(index) {
+            const item = state.history[index];
+            if (!item) return;
+            
+            showPage('home');
+            document.getElementById('questionInput').value = item.question;
+            document.getElementById('solutionText').textContent = item.solution;
+            document.getElementById('solutionBox').style.display = 'block';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // ============================================
@@ -403,15 +510,41 @@
                 const solution = await getSmartSolution(question);
                 displaySolution(solution);
                 
+                // Add to history
+                const historyItem = {
+                    question: question,
+                    solution: solution,
+                    timestamp: new Date().toISOString()
+                };
+                
+                state.history.push(historyItem);
+                
+                // Keep only last 50 items to avoid data bloat
+                if (state.history.length > 50) {
+                    state.history = state.history.slice(-50);
+                }
+                
                 state.questionsToday++;
-                await updateUserData(state.userEmail, { 
-                    questions_today: state.questionsToday 
+                
+                console.log('Saving history with', state.history.length, 'items');
+                
+                // Save to backend
+                const success = await updateUserData(state.userEmail, { 
+                    questions_today: state.questionsToday,
+                    history: state.history
                 });
+                
+                if (success) {
+                    console.log('History saved successfully');
+                } else {
+                    console.error('Failed to save history');
+                }
                 
                 updateUI();
                 questionInput.value = '';
                 
             } catch (error) {
+                console.error('Error submitting question:', error);
                 alert('❌ Something went wrong. Please try again!');
             } finally {
                 document.getElementById('submitBtn').innerHTML = '<span>🚀 Get Smart Solution</span>';
