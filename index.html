@@ -197,12 +197,21 @@
             if (!email || !email.includes('@')) { alert('⚠️ Please enter a valid email'); return; }
             document.getElementById('authBtnText').textContent = 'Sending...';
             try {
-                const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+                // Use explicit Vercel URL instead of window.location.href
+                const redirectUrl = window.location.hostname === 'localhost' 
+                    ? window.location.href 
+                    : 'https://edupadi-iota.vercel.app';
+                
+                const { error } = await supabase.auth.signInWithOtp({ 
+                    email, 
+                    options: { emailRedirectTo: redirectUrl } 
+                });
                 if (error) throw error;
                 document.getElementById('sentEmailDisplay').textContent = email;
                 document.getElementById('emailLoginStep').style.display = 'none';
                 document.getElementById('emailSentStep').style.display = 'block';
             } catch (error) {
+                console.error('Sign in error:', error);
                 alert('❌ Failed to send magic link');
             } finally {
                 document.getElementById('authBtnText').textContent = 'Continue with Email';
