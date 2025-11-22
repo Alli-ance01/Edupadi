@@ -350,49 +350,53 @@
         }
 
         async function loadUserData() {
-            // ALWAYS load from localStorage first (primary source)
-            const localHistory = getFromLocalStorage(getUserStorageKey('history'), []);
-            const localQuestionsToday = getFromLocalStorage(getUserStorageKey('questionsToday'), 0);
-            const localPremium = getFromLocalStorage(getUserStorageKey('isPremium'), false);
-            const localLastDate = getFromLocalStorage(getUserStorageKey('lastDate'), '');
+            // Try to load from backend FIRST for cross-device sync
+            const backendData = await loadFromBackend();
             
-            state.history = localHistory;
-            state.questionsToday = localQuestionsToday;
-            state.isPremium = localPremium;
-            
-            console.log('Loaded from localStorage:', {
-                history: state.history.length,
-                questionsToday: state.questionsToday,
-                isPremium: state.isPremium
-            });
+            if (backendData) {
+                // Backend is source of truth
+                state.history = backendData.history || [];
+                state.questionsToday = backendData.questions_today || 0;
+                
+                // Check premium status
+                if (backendData.is_premium && backendData.premium_expiry) {
+                    const expiry = new Date(backendData.premium_expiry);
+                    state.isPremium = expiry > new Date();
+                } else {
+                    state.isPremium = false;
+                }
+                
+                // Save to localStorage as backup
+                saveToLocalStorage(getUserStorageKey('history'), state.history);
+                saveToLocalStorage(getUserStorageKey('questionsToday'), state.questionsToday);
+                saveToLocalStorage(getUserStorageKey('isPremium'), state.isPremium);
+                
+                console.log('Loaded from Supabase:', {
+                    history: state.history.length,
+                    questionsToday: state.questionsToday,
+                    isPremium: state.isPremium
+                });
+            } else {
+                // Fallback to localStorage if backend fails
+                console.log('Backend unavailable, using localStorage');
+                const localHistory = getFromLocalStorage(getUserStorageKey('history'), []);
+                const localQuestionsToday = getFromLocalStorage(getUserStorageKey('questionsToday'), 0);
+                const localPremium = getFromLocalStorage(getUserStorageKey('isPremium'), false);
+                
+                state.history = localHistory;
+                state.questionsToday = localQuestionsToday;
+                state.isPremium = localPremium;
+            }
             
             // Reset daily count if new day
+            const localLastDate = getFromLocalStorage(getUserStorageKey('lastDate'), '');
             const today = new Date().toDateString();
             if (localLastDate !== today) {
                 state.questionsToday = 0;
                 saveToLocalStorage(getUserStorageKey('questionsToday'), 0);
                 saveToLocalStorage(getUserStorageKey('lastDate'), today);
+                await syncToBackend();
             }
-            
-            // Try to sync with backend (but don't block on it)
-            loadFromBackend().then(backendData => {
-                if (backendData) {
-                    // Merge backend data if it has more history items
-                    if (backendData.history && backendData.history.length > state.history.length) {
-                        state.history = backendData.history;
-                        saveToLocalStorage(getUserStorageKey('history'), state.history);
-                    }
-                    
-                    if (backendData.is_premium) {
-                        const expiry = new Date(backendData.premium_expiry);
-                        if (expiry > new Date()) {
-                            state.isPremium = true;
-                            saveToLocalStorage(getUserStorageKey('isPremium'), true);
-                        }
-                    }
-                }
-                updateUI();
-            });
             
             updateUI();
         }
