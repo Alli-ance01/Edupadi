@@ -350,55 +350,66 @@
         }
 
         async function loadUserData() {
-            // Try to load from backend FIRST for cross-device sync
-            const backendData = await loadFromBackend();
+            // STEP 1: Load from localStorage IMMEDIATELY (guaranteed to work)
+            const localHistory = getFromLocalStorage(getUserStorageKey('history'), []);
+            const localQuestionsToday = getFromLocalStorage(getUserStorageKey('questionsToday'), 0);
+            const localPremium = getFromLocalStorage(getUserStorageKey('isPremium'), false);
+            const localLastDate = getFromLocalStorage(getUserStorageKey('lastDate'), '');
             
-            if (backendData) {
-                // Backend is source of truth
-                state.history = backendData.history || [];
-                state.questionsToday = backendData.questions_today || 0;
-                
-                // Check premium status
-                if (backendData.is_premium && backendData.premium_expiry) {
-                    const expiry = new Date(backendData.premium_expiry);
-                    state.isPremium = expiry > new Date();
-                } else {
-                    state.isPremium = false;
-                }
-                
-                // Save to localStorage as backup
-                saveToLocalStorage(getUserStorageKey('history'), state.history);
-                saveToLocalStorage(getUserStorageKey('questionsToday'), state.questionsToday);
-                saveToLocalStorage(getUserStorageKey('isPremium'), state.isPremium);
-                
-                console.log('Loaded from Supabase:', {
-                    history: state.history.length,
-                    questionsToday: state.questionsToday,
-                    isPremium: state.isPremium
-                });
-            } else {
-                // Fallback to localStorage if backend fails
-                console.log('Backend unavailable, using localStorage');
-                const localHistory = getFromLocalStorage(getUserStorageKey('history'), []);
-                const localQuestionsToday = getFromLocalStorage(getUserStorageKey('questionsToday'), 0);
-                const localPremium = getFromLocalStorage(getUserStorageKey('isPremium'), false);
-                
-                state.history = localHistory;
-                state.questionsToday = localQuestionsToday;
-                state.isPremium = localPremium;
-            }
+            state.history = localHistory;
+            state.questionsToday = localQuestionsToday;
+            state.isPremium = localPremium;
+            
+            console.log('✅ Loaded from localStorage:', {
+                history: state.history.length,
+                questionsToday: state.questionsToday,
+                isPremium: state.isPremium
+            });
             
             // Reset daily count if new day
-            const localLastDate = getFromLocalStorage(getUserStorageKey('lastDate'), '');
             const today = new Date().toDateString();
             if (localLastDate !== today) {
                 state.questionsToday = 0;
                 saveToLocalStorage(getUserStorageKey('questionsToday'), 0);
                 saveToLocalStorage(getUserStorageKey('lastDate'), today);
-                await syncToBackend();
             }
             
+            // Update UI immediately with localStorage data
             updateUI();
+            
+            // STEP 2: Try to sync with backend in background (non-blocking)
+            loadFromBackend().then(backendData => {
+                if (backendData && backendData.history) {
+                    console.log('🌐 Backend data received:', {
+                        backendHistory: backendData.history.length,
+                        localHistory: state.history.length
+                    });
+                    
+                    // Merge: Use whichever has MORE history items (most recent)
+                    if (backendData.history.length > state.history.length) {
+                        console.log('📥 Updating from backend (more items)');
+                        state.history = backendData.history;
+                        saveToLocalStorage(getUserStorageKey('history'), state.history);
+                        updateUI();
+                    } else if (state.history.length > backendData.history.length) {
+                        console.log('📤 Pushing local data to backend (more items locally)');
+                        // Local has more, push to backend
+                        syncToBackend();
+                    }
+                    
+                    // Check premium from backend
+                    if (backendData.is_premium && backendData.premium_expiry) {
+                        const expiry = new Date(backendData.premium_expiry);
+                        if (expiry > new Date()) {
+                            state.isPremium = true;
+                            saveToLocalStorage(getUserStorageKey('isPremium'), true);
+                            updateUI();
+                        }
+                    }
+                }
+            }).catch(error => {
+                console.log('⚠️ Backend sync skipped:', error.message);
+            });
         }
 
         function logout() {
