@@ -1,31 +1,74 @@
-import { loadUser } from "./auth.js";
-import { generateSolution } from "./ai.js";
-import { addHistory, renderHistory } from "./history.js";
+// src/main.js
+
+import { getAiSolution } from "./ai.js";
+import { saveQuestion, getHistory } from "./history.js";
+import { showSolution, updateQuestionsCount, showError } from "./ui.js";
+import { isPremiumUser, getDailyLimit } from "./premium.js";
 import { state } from "./state.js";
-import { initUI } from "./ui.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
-    let loggedIn = await loadUser();
+const submitBtn = document.getElementById("submitBtn");
+const questionInput = document.getElementById("questionInput");
 
-    if (!loggedIn) {
-        document.getElementById("authPage").style.display = "block";
+// Main submit handler
+export async function submitQuestion() {
+    const question = questionInput.value.trim();
+    if (!question) {
+        showError("Please enter a question.");
+        return;
     }
 
-    document.getElementById("submitBtn").addEventListener("click", onSubmit);
-});
+    // Check free plan limits
+    if (!isPremiumUser() && state.questionsToday >= getDailyLimit()) {
+        showError("Free plan limit reached. Upgrade to premium for unlimited questions.");
+        return;
+    }
 
-async function onSubmit() {
-    const question = document.getElementById("questionInput").value.trim();
-    if (!question) return alert("Enter a question");
+    // Disable button while fetching
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = "⏳ Generating...";
 
-    const solution = await generateSolution(question);
+    try {
+        // Call Gemini proxy API
+        const answer = await getAiSolution(question);
 
-    document.getElementById("solutionText").textContent = solution;
-    document.getElementById("solutionBox").style.display = "block";
+        // Show AI solution
+        showSolution(answer);
 
-    addHistory(question, solution);
-    renderHistory();
+        // Save to history & state
+        saveQuestion({ question, answer, date: new Date().toISOString() });
+        state.questionsToday += 1;
+        updateQuestionsCount(state.questionsToday);
 
-    state.questionsToday++;
-    initUI();
+        // Clear input
+        questionInput.value = "";
+    } catch (err) {
+        console.error(err);
+        showError("Failed to get AI solution. Try again later.");
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "🚀 Get AI Solution";
+    }
 }
+
+// Initialize app
+export function initApp() {
+    // Load history
+    getHistory().then(historyItems => {
+        state.history = historyItems;
+        // Optionally render history UI here
+    });
+
+    // Update today's questions count
+    updateQuestionsCount(state.questionsToday);
+
+    // Attach enter key listener for textarea
+    questionInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            submitQuestion();
+        }
+    });
+}
+
+// Start the app
+initApp();

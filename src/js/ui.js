@@ -1,10 +1,18 @@
-import { state } from "./state.js";
+// src/ui.js
 
-export function initUI() {
-    document.getElementById("homePage").style.display = "block";
-    document.getElementById("authPage").style.display = "none";
+export function showSolution(answer) {
+    const solutionBox = document.getElementById("solutionBox");
+    const solutionText = document.getElementById("solutionText");
 
-    document.getElementById("emailDisplay").textContent = state.userEmail;
-    document.getElementById("questionsLeft").textContent =
-        state.isPremium ? "∞" : 5 - state.questionsToday;
+    solutionText.textContent = answer;
+    solutionBox.style.display = "block";
+}
+
+export function updateQuestionsCount(count) {
+    const countEl = document.getElementById("questionsCount");
+    countEl.textContent = `${count}/3`;
+}
+
+export function showError(msg) {
+    alert(msg); // simple for now; can make fancier toast later
 }

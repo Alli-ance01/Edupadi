@@ -1,8 +1,4 @@
-export const CONFIG = {
-    SUPABASE_URL: "https://idbyzxowbbwxssiswqmq.supabase.co",
-    SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieHhqaGR5c2R0b29lc2RjaHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTU0MzMsImV4cCI6MjA3OTMzMTQzM30.wIhaIrw3akc3hXfa1ZyGAUNlmVVRDvlAvfSMbPG00ag",
-    GEMINI_API_KEY: "AIzaSyA0utwy7VG6J4dL44Pd5-8T-JkrAAonbN4",
-    FLUTTERWAVE_PUBLIC_KEY: "FLWPUBK_TEST-30227ae446eeecdaae2054e3ef1f01d6-X",
-    PREMIUM_PRICE: 1500,
-    DAILY_FREE_LIMIT: 5,
-};
+// src/config.js
+export const SUPABASE_URL = "https://your-supabase-url.supabase.co";
+export const SUPABASE_ANON_KEY = "your-anon-key";
+export const GEMINI_API_KEY = "your-gemini-api-key";

@@ -1,26 +1,17 @@
-import { CONFIG } from "./config.js";
+// src/ai.js
 
-export async function generateSolution(question) {
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.GEMINI_API_KEY}`,
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: question }] }],
-                generationConfig: {
-                    maxOutputTokens: 500,
-                    temperature: 0.7
-                }
-            }),
-        }
-    );
+export async function getAiSolution(question) {
+    const response = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+    });
 
-    const data = await response.json();
-
-    if (!data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-        throw new Error("AI failed");
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error?.error || "AI request failed");
     }
 
-    return data.candidates[0].content.parts[0].text.trim();
+    const data = await response.json();
+    return data.answer;
 }

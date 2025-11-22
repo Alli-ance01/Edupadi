@@ -1,43 +1,24 @@
-import { CONFIG } from "./config.js";
-import { state } from "./state.js";
-import { initUI } from "./ui.js";
+// src/auth.js
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { user } from "./state.js";
 
-export async function login(email) {
-    const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export async function signIn() {
+    const email = document.getElementById("authEmail").value;
     const { error } = await supabase.auth.signInWithOtp({ email });
-
-    if (error) throw error;
-
-    alert("Check your email for login link");
+    if (error) return alert(error.message);
+    document.getElementById("sentEmailDisplay").textContent = email;
+    document.getElementById("emailLoginStep").style.display = "none";
+    document.getElementById("emailSentStep").style.display = "block";
 }
 
-export async function loadUser() {
-    const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-    let { data } = await supabase.auth.getUser();
-
-    if (!data?.user) return false;
-
-    state.userEmail = data.user.email;
-
-    await loadUserData();
-    initUI();
-
-    return true;
+export function resetAuthModal() {
+    document.getElementById("emailLoginStep").style.display = "block";
+    document.getElementById("emailSentStep").style.display = "none";
 }
 
-export async function loadUserData() {
-    const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-
-    let { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("email", state.userEmail)
-        .single();
-
-    if (!data) return;
-
-    state.isPremium = data.is_premium;
-    state.premiumExpiry = data.premium_expiry;
-    state.questionsToday = data.questions_today || 0;
-    state.history = data.history || [];
+export function logout() {
+    user = null;
+    location.reload();
 }
