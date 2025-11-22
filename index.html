@@ -6,6 +6,7 @@
     <title>EduPadi - Smart Homework Helper</title>
     <meta name="theme-color" content="#667eea">
     <script src="https://checkout.flutterwave.com/v3.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -76,13 +77,13 @@
     <div id="authModal" class="auth-modal">
         <div class="auth-card">
             <h2 style="margin-bottom: 10px;">Welcome to EduPadi! 📚</h2>
-            <p style="color: #6b7280; margin-bottom: 25px;">Enter your email to continue. We'll remember you across all devices!</p>
+            <p style="color: #6b7280; margin-bottom: 25px;">Enter your email to continue. We'll send you a magic link!</p>
             <input type="email" id="authEmail" class="input-field" placeholder="your.email@example.com">
             <button class="submit-btn" onclick="verifyUser()">
-                <span id="authBtnText">Continue</span>
+                <span id="authBtnText">Send Magic Link</span>
             </button>
             <p style="color: #6b7280; font-size: 13px; margin-top: 15px; text-align: center;">
-                No password needed! We use email-based authentication.
+                Secure email authentication - no password needed!
             </p>
         </div>
     </div>
@@ -175,9 +176,11 @@
             PREMIUM_PRICE: 500,
             FREE_QUESTIONS_LIMIT: 3,
             SUPABASE_URL: 'https://ybxxjhdysdtooesdchxi.supabase.co',
-            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieHhqaGR5c2R0b29lc2RjaHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTU0MzMsImV4cCI6MjA3OTMzMTQzM30.wIhaIrw3akc3hXfa1ZyGAUNlmVVRDvlAvfSMbPG00ag',
-            USE_BACKEND: true
+            SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlieHhqaGR5c2R0b29lc2RjaHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTU0MzMsImV4cCI6MjA3OTMzMTQzM30.wIhaIrw3akc3hXfa1ZyGAUNlmVVRDvlAvfSMbPG00ag'
         };
+
+        // Initialize Supabase
+        const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
 
         let state = {
             currentPage: 'home',
@@ -189,150 +192,23 @@
         };
 
         // ============================================
-        // LOCALSTORAGE HELPERS (Primary Storage)
+        // AUTHENTICATION FUNCTIONS
         // ============================================
         
-        function saveToLocalStorage(key, value) {
-            try {
-                localStorage.setItem(key, JSON.stringify(value));
-            } catch (e) {
-                console.error('LocalStorage error:', e);
-            }
+        async function init() {
+            await checkAuthState();
         }
 
-        function getFromLocalStorage(key, defaultValue = null) {
-            try {
-                const item = localStorage.getItem(key);
-                return item ? JSON.parse(item) : defaultValue;
-            } catch (e) {
-                console.error('LocalStorage error:', e);
-                return defaultValue;
-            }
-        }
-
-        function getUserStorageKey(key) {
-            return `edupadi_${state.userEmail}_${key}`;
-        }
-
-        // ============================================
-        // BACKEND FUNCTIONS (Supabase Sync - Optional)
-        // ============================================
-        
-        async function callBackend(endpoint, method = 'GET', data = null) {
-            if (!CONFIG.USE_BACKEND) {
-                return null;
-            }
+        async function checkAuthState() {
+            const { data, error } = await supabase.auth.getSession();
             
-            const url = `${CONFIG.SUPABASE_URL}/rest/v1/${endpoint}`;
-            const options = {
-                method: method,
-                headers: {
-                    'apikey': CONFIG.SUPABASE_KEY,
-                    'Authorization': `Bearer ${CONFIG.SUPABASE_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                }
-            };
-            
-            if (data && method !== 'GET') {
-                options.body = JSON.stringify(data);
-            }
-            
-            try {
-                const response = await fetch(url, options);
-                if (!response.ok) {
-                    console.error('Backend response not ok:', response.status);
-                    return null;
-                }
-                const result = await response.json();
-                return result;
-            } catch (error) {
-                console.error('Backend error:', error);
-                return null;
-            }
-        }
-
-        async function syncToBackend() {
-            if (!CONFIG.USE_BACKEND || !state.userEmail) {
-                console.log('⚠️ Sync skipped: Backend disabled or no email');
-                return;
-            }
-            
-            try {
-                console.log('📤 Syncing to backend...', {
-                    email: state.userEmail,
-                    history: state.history.length,
-                    questionsToday: state.questionsToday
-                });
-                
-                // First, check if user exists
-                const existing = await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}&select=*`);
-                
-                if (existing && existing.length > 0) {
-                    // Update existing user
-                    const result = await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}`, 'PATCH', {
-                        questions_today: state.questionsToday,
-                        history: state.history,
-                        is_premium: state.isPremium,
-                        last_updated: new Date().toISOString()
-                    });
-                    console.log('✅ Updated existing user:', result);
-                } else {
-                    // Create new user
-                    const result = await callBackend('users', 'POST', {
-                        email: state.userEmail,
-                        questions_today: state.questionsToday,
-                        history: state.history,
-                        is_premium: state.isPremium,
-                        created_at: new Date().toISOString()
-                    });
-                    console.log('✅ Created new user:', result);
-                }
-                
-                console.log('✅ Synced to backend successfully');
-            } catch (error) {
-                console.error('❌ Backend sync failed:', error);
-            }
-        }
-
-        async function loadFromBackend() {
-            if (!CONFIG.USE_BACKEND || !state.userEmail) return null;
-            
-            try {
-                const result = await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}&select=*`);
-                
-                if (result && result.length > 0) {
-                    return result[0];
-                }
-                
-                // Create new user in backend
-                const newUser = {
-                    email: state.userEmail,
-                    is_premium: false,
-                    questions_today: 0,
-                    history: [],
-                    created_at: new Date().toISOString()
-                };
-                
-                await callBackend('users', 'POST', newUser);
-                return newUser;
-            } catch (error) {
-                console.error('Backend load failed:', error);
-                return null;
-            }
-        }
-
-        // ============================================
-        // AUTH FUNCTIONS
-        // ============================================
-        
-        function init() {
-            const savedEmail = localStorage.getItem('edupadiUserEmail');
-            if (savedEmail) {
-                state.userEmail = savedEmail;
-                document.getElementById('userEmailDisplay').textContent = savedEmail;
+            if (data.session && data.session.user) {
+                // User is logged in
+                state.userEmail = data.session.user.email;
+                document.getElementById('userEmailDisplay').textContent = state.userEmail;
                 document.getElementById('userInfo').style.display = 'flex';
-                loadUserData();
+                hideAuthModal();
+                await loadUserData();
             } else {
                 showAuthModal();
             }
@@ -354,100 +230,171 @@
                 return;
             }
             
-            document.getElementById('authBtnText').textContent = 'Verifying...';
+            document.getElementById('authBtnText').textContent = 'Sending magic link...';
             
             try {
-                state.userEmail = email;
-                localStorage.setItem('edupadiUserEmail', email);
-                
-                await loadUserData();
-                hideAuthModal();
-                
-                document.getElementById('userEmailDisplay').textContent = email;
-                document.getElementById('userInfo').style.display = 'flex';
-                
-            } catch (error) {
-                alert('❌ Connection error. Please try again.');
-                console.error(error);
-            } finally {
-                document.getElementById('authBtnText').textContent = 'Continue';
-            }
-        }
-
-        async function loadUserData() {
-            // STEP 1: Load from localStorage IMMEDIATELY (guaranteed to work)
-            const localHistory = getFromLocalStorage(getUserStorageKey('history'), []);
-            const localQuestionsToday = getFromLocalStorage(getUserStorageKey('questionsToday'), 0);
-            const localPremium = getFromLocalStorage(getUserStorageKey('isPremium'), false);
-            const localLastDate = getFromLocalStorage(getUserStorageKey('lastDate'), '');
-            
-            state.history = localHistory;
-            state.questionsToday = localQuestionsToday;
-            state.isPremium = localPremium;
-            
-            console.log('✅ Loaded from localStorage:', {
-                history: state.history.length,
-                questionsToday: state.questionsToday,
-                isPremium: state.isPremium
-            });
-            
-            // Reset daily count if new day
-            const today = new Date().toDateString();
-            if (localLastDate !== today) {
-                state.questionsToday = 0;
-                saveToLocalStorage(getUserStorageKey('questionsToday'), 0);
-                saveToLocalStorage(getUserStorageKey('lastDate'), today);
-            }
-            
-            // Update UI immediately with localStorage data
-            updateUI();
-            
-            // STEP 2: Try to sync with backend in background (non-blocking)
-            loadFromBackend().then(backendData => {
-                if (backendData && backendData.history) {
-                    console.log('🌐 Backend data received:', {
-                        backendHistory: backendData.history.length,
-                        localHistory: state.history.length
-                    });
-                    
-                    // Merge: Use whichever has MORE history items (most recent)
-                    if (backendData.history.length > state.history.length) {
-                        console.log('📥 Updating from backend (more items)');
-                        state.history = backendData.history;
-                        saveToLocalStorage(getUserStorageKey('history'), state.history);
-                        updateUI();
-                    } else if (state.history.length > backendData.history.length) {
-                        console.log('📤 Pushing local data to backend (more items locally)');
-                        // Local has more, push to backend
-                        syncToBackend();
-                    }
-                    
-                    // Check premium from backend
-                    if (backendData.is_premium && backendData.premium_expiry) {
-                        const expiry = new Date(backendData.premium_expiry);
-                        if (expiry > new Date()) {
-                            state.isPremium = true;
-                            saveToLocalStorage(getUserStorageKey('isPremium'), true);
-                            updateUI();
-                        }
-                    }
-                }
-            }).catch(error => {
-                console.log('⚠️ Backend sync skipped:', error.message);
-            });
-        }
-
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('edupadiUserEmail');
-                // Clear user-specific data
-                Object.keys(localStorage).forEach(key => {
-                    if (key.startsWith('edupadi_')) {
-                        localStorage.removeItem(key);
+                const { data, error } = await supabase.auth.signInWithOtp({
+                    email: email,
+                    options: {
+                        emailRedirectTo: window.location.origin
                     }
                 });
-                location.reload();
+                
+                if (error) throw error;
+                
+                alert('📧 Check your email for the login link! Click the link to continue.');
+                document.getElementById('authBtnText').textContent = 'Check Your Email';
+                
+            } catch (error) {
+                console.error('Auth error:', error);
+                alert('❌ Login failed. Please try again.');
+                document.getElementById('authBtnText').textContent = 'Send Magic Link';
             }
+        }
+
+        async function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                const { error } = await supabase.auth.signOut();
+                if (!error) {
+                    // Reset state
+                    state.userEmail = null;
+                    state.isPremium = false;
+                    state.questionsToday = 0;
+                    state.history = [];
+                    
+                    location.reload();
+                }
+            }
+        }
+
+        // ============================================
+        // USER DATA MANAGEMENT (SECURE - SUPABASE ONLY)
+        // ============================================
+        
+        async function loadUserData() {
+            if (!state.userEmail) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', state.userEmail)
+                    .single();
+                
+                if (data && !error) {
+                    // Load data from secure backend
+                    state.questionsToday = data.questions_today || 0;
+                    state.isPremium = data.is_premium || false;
+                    state.history = data.history || [];
+                    
+                    // Check if we need to reset daily count (new day)
+                    await checkDailyReset(data);
+                    
+                    updateUI();
+                } else if (error && error.code === 'PGRST116') {
+                    // User doesn't exist in database, create them
+                    await createUser();
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+
+        async function createUser() {
+            const { data, error } = await supabase
+                .from('users')
+                .insert([
+                    {
+                        email: state.userEmail,
+                        questions_today: 0,
+                        history: [],
+                        is_premium: false,
+                        last_reset: new Date().toISOString(),
+                        created_at: new Date().toISOString()
+                    }
+                ])
+                .select();
+            
+            if (error) {
+                console.error('Error creating user:', error);
+            } else {
+                console.log('✅ New user created:', data);
+            }
+        }
+
+        async function saveUserData() {
+            if (!state.userEmail) return;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .upsert({
+                        email: state.userEmail,
+                        questions_today: state.questionsToday,
+                        history: state.history,
+                        is_premium: state.isPremium,
+                        last_reset: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select();
+                
+                if (error) {
+                    console.error('Save error:', error);
+                }
+            } catch (error) {
+                console.error('Error saving user data:', error);
+            }
+        }
+
+        async function checkDailyReset(userData) {
+            const today = new Date().toDateString();
+            const lastReset = userData.last_reset ? new Date(userData.last_reset).toDateString() : '';
+            
+            if (lastReset !== today) {
+                // New day, reset question count
+                state.questionsToday = 0;
+                await saveUserData();
+            }
+        }
+
+        // ============================================
+        // PREMIUM VALIDATION (SECURE)
+        // ============================================
+        
+        async function validatePremiumStatus() {
+            if (!state.userEmail) return false;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('is_premium, premium_expiry')
+                    .eq('email', state.userEmail)
+                    .single();
+                
+                if (data && !error) {
+                    // Check if premium is active and not expired
+                    const isPremiumValid = data.is_premium && 
+                                         (!data.premium_expiry || new Date(data.premium_expiry) > new Date());
+                    
+                    state.isPremium = isPremiumValid;
+                    return isPremiumValid;
+                }
+            } catch (error) {
+                console.error('Premium validation error:', error);
+            }
+            
+            state.isPremium = false;
+            return false;
+        }
+
+        async function canAskQuestion() {
+            // Always validate premium status first
+            await validatePremiumStatus();
+            
+            if (state.isPremium) return true;
+            
+            // For free users, check daily limit
+            return state.questionsToday < CONFIG.FREE_QUESTIONS_LIMIT;
         }
 
         // ============================================
@@ -538,7 +485,7 @@
         }
 
         // ============================================
-        // QUESTION SUBMISSION
+        // QUESTION SUBMISSION (SECURE)
         // ============================================
         
         async function submitQuestion() {
@@ -550,7 +497,10 @@
                 return;
             }
             
-            if (!state.isPremium && state.questionsToday >= CONFIG.FREE_QUESTIONS_LIMIT) {
+            // SECURITY: Always check permissions from backend
+            const canAsk = await canAskQuestion();
+            
+            if (!canAsk) {
                 const upgrade = confirm('⚠️ Daily limit reached!\n\nUpgrade to Premium for unlimited questions?\n\nOnly ₦500/month');
                 if (upgrade) upgradeToPremium();
                 return;
@@ -579,17 +529,8 @@
                 
                 state.questionsToday++;
                 
-                // Save to localStorage IMMEDIATELY
-                saveToLocalStorage(getUserStorageKey('history'), state.history);
-                saveToLocalStorage(getUserStorageKey('questionsToday'), state.questionsToday);
-                
-                console.log('Saved to localStorage:', {
-                    history: state.history.length,
-                    questionsToday: state.questionsToday
-                });
-                
-                // Sync to backend in background (don't wait)
-                syncToBackend();
+                // SECURITY: Save ONLY to secure backend
+                await saveUserData();
                 
                 updateUI();
                 questionInput.value = '';
@@ -604,7 +545,9 @@
         }
 
         async function getSmartSolution(question) {
+            // Simulate AI processing
             await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
+            
             const q = question.toLowerCase();
             
             if (q.match(/\d+\s*[\+\-\*\/×÷]\s*\d+/) || q.includes('solve') || q.includes('calculate')) {
@@ -622,10 +565,10 @@
         }
 
         // ============================================
-        // PREMIUM UPGRADE
+        // PREMIUM UPGRADE (SECURE)
         // ============================================
         
-        function upgradeToPremium() {
+        async function upgradeToPremium() {
             if (!state.userEmail) {
                 alert('Please login first');
                 return;
@@ -647,21 +590,26 @@
                         const expiry = new Date();
                         expiry.setMonth(expiry.getMonth() + 1);
                         
-                        state.isPremium = true;
+                        // SECURITY: Update premium status in backend ONLY
+                        const { data, error } = await supabase
+                            .from('users')
+                            .update({
+                                is_premium: true,
+                                premium_expiry: expiry.toISOString(),
+                                transaction_id: response.transaction_id
+                            })
+                            .eq('email', state.userEmail);
                         
-                        // Save to localStorage immediately
-                        saveToLocalStorage(getUserStorageKey('isPremium'), true);
-                        saveToLocalStorage(getUserStorageKey('premiumExpiry'), expiry.toISOString());
-                        
-                        // Sync to backend
-                        await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}`, 'PATCH', {
-                            is_premium: true,
-                            premium_expiry: expiry.toISOString(),
-                            transaction_id: response.transaction_id
-                        });
-                        
-                        updateUI();
-                        alert('🎉 Welcome to Premium! You now have unlimited access!');
+                        if (!error) {
+                            // Refresh from backend to get updated status
+                            await validatePremiumStatus();
+                            updateUI();
+                            alert('🎉 Welcome to Premium! You now have unlimited access!');
+                        } else {
+                            alert('❌ Upgrade failed. Please contact support.');
+                        }
+                    } else {
+                        alert('❌ Payment failed. Please try again.');
                     }
                 }
             });
