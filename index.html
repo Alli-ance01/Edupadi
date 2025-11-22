@@ -189,12 +189,37 @@
         };
 
         // ============================================
-        // BACKEND FUNCTIONS (Supabase Integration)
+        // LOCALSTORAGE HELPERS (Primary Storage)
+        // ============================================
+        
+        function saveToLocalStorage(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (e) {
+                console.error('LocalStorage error:', e);
+            }
+        }
+
+        function getFromLocalStorage(key, defaultValue = null) {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : defaultValue;
+            } catch (e) {
+                console.error('LocalStorage error:', e);
+                return defaultValue;
+            }
+        }
+
+        function getUserStorageKey(key) {
+            return `edupadi_${state.userEmail}_${key}`;
+        }
+
+        // ============================================
+        // BACKEND FUNCTIONS (Supabase Sync - Optional)
         // ============================================
         
         async function callBackend(endpoint, method = 'GET', data = null) {
             if (!CONFIG.USE_BACKEND) {
-                console.log('Backend disabled - using localStorage fallback');
                 return null;
             }
             
@@ -227,82 +252,48 @@
             }
         }
 
-        async function checkUserPremiumStatus(email) {
-            if (!CONFIG.USE_BACKEND) {
-                return localStorage.getItem('edupadiPremium') === 'true';
-            }
+        async function syncToBackend() {
+            if (!CONFIG.USE_BACKEND || !state.userEmail) return;
             
-            const result = await callBackend(`users?email=eq.${encodeURIComponent(email)}&select=*`);
-            if (result && result.length > 0) {
-                const user = result[0];
-                if (!user.premium_expiry) return false;
-                const now = new Date();
-                const expiry = new Date(user.premium_expiry);
-                return user.is_premium && expiry > now;
+            try {
+                // Try to update existing user
+                await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}`, 'PATCH', {
+                    questions_today: state.questionsToday,
+                    history: state.history,
+                    is_premium: state.isPremium,
+                    last_updated: new Date().toISOString()
+                });
+                
+                console.log('Synced to backend successfully');
+            } catch (error) {
+                console.error('Backend sync failed:', error);
             }
-            return false;
         }
 
-        async function getUserData(email) {
-            if (!CONFIG.USE_BACKEND) {
-                // Fallback to localStorage
-                const storedHistory = localStorage.getItem('edupadiHistory');
-                return {
-                    questions_today: parseInt(localStorage.getItem('edupadiQuestionsToday') || '0'),
-                    history: storedHistory ? JSON.parse(storedHistory) : []
+        async function loadFromBackend() {
+            if (!CONFIG.USE_BACKEND || !state.userEmail) return null;
+            
+            try {
+                const result = await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}&select=*`);
+                
+                if (result && result.length > 0) {
+                    return result[0];
+                }
+                
+                // Create new user in backend
+                const newUser = {
+                    email: state.userEmail,
+                    is_premium: false,
+                    questions_today: 0,
+                    history: [],
+                    created_at: new Date().toISOString()
                 };
-            }
-            
-            const result = await callBackend(`users?email=eq.${encodeURIComponent(email)}&select=*`);
-            
-            if (result && result.length > 0) {
-                const user = result[0];
-                // Ensure history is an array
-                if (!user.history || !Array.isArray(user.history)) {
-                    user.history = [];
-                }
-                return user;
-            }
-            
-            // Create new user
-            const newUser = {
-                email: email,
-                is_premium: false,
-                questions_today: 0,
-                history: [],
-                created_at: new Date().toISOString()
-            };
-            
-            try {
-                const created = await callBackend('users', 'POST', newUser);
-                return (created && created.length > 0) ? created[0] : newUser;
-            } catch (error) {
-                console.error('Error creating user:', error);
+                
+                await callBackend('users', 'POST', newUser);
                 return newUser;
-            }
-        }
-
-        async function updateUserData(email, updates) {
-            if (!CONFIG.USE_BACKEND) {
-                // Update localStorage
-                if (updates.questions_today !== undefined) {
-                    localStorage.setItem('edupadiQuestionsToday', updates.questions_today.toString());
-                }
-                if (updates.is_premium !== undefined) {
-                    localStorage.setItem('edupadiPremium', updates.is_premium.toString());
-                }
-                if (updates.history !== undefined) {
-                    localStorage.setItem('edupadiHistory', JSON.stringify(updates.history));
-                }
-                return true;
-            }
-            
-            try {
-                await callBackend(`users?email=eq.${encodeURIComponent(email)}`, 'PATCH', updates);
-                return true;
             } catch (error) {
-                console.error('Error updating user:', error);
-                return false;
+                console.error('Backend load failed:', error);
+                return null;
             }
         }
 
@@ -359,40 +350,62 @@
         }
 
         async function loadUserData() {
-            try {
-                const userData = await getUserData(state.userEmail);
-                
-                state.isPremium = await checkUserPremiumStatus(state.userEmail);
-                state.questionsToday = userData.questions_today || 0;
-                
-                // Load history properly - ensure it's always an array
-                if (userData.history && Array.isArray(userData.history)) {
-                    state.history = userData.history;
-                } else {
-                    state.history = [];
-                }
-                
-                console.log('Loaded history:', state.history.length, 'items');
-                
-                // Reset daily count if new day
-                const savedDate = localStorage.getItem('edupadiLastDate');
-                const today = new Date().toDateString();
-                if (savedDate !== today) {
-                    state.questionsToday = 0;
-                    localStorage.setItem('edupadiLastDate', today);
-                    await updateUserData(state.userEmail, { questions_today: 0 });
-                }
-                
-                updateUI();
-            } catch (error) {
-                console.error('Error loading user data:', error);
-                updateUI();
+            // ALWAYS load from localStorage first (primary source)
+            const localHistory = getFromLocalStorage(getUserStorageKey('history'), []);
+            const localQuestionsToday = getFromLocalStorage(getUserStorageKey('questionsToday'), 0);
+            const localPremium = getFromLocalStorage(getUserStorageKey('isPremium'), false);
+            const localLastDate = getFromLocalStorage(getUserStorageKey('lastDate'), '');
+            
+            state.history = localHistory;
+            state.questionsToday = localQuestionsToday;
+            state.isPremium = localPremium;
+            
+            console.log('Loaded from localStorage:', {
+                history: state.history.length,
+                questionsToday: state.questionsToday,
+                isPremium: state.isPremium
+            });
+            
+            // Reset daily count if new day
+            const today = new Date().toDateString();
+            if (localLastDate !== today) {
+                state.questionsToday = 0;
+                saveToLocalStorage(getUserStorageKey('questionsToday'), 0);
+                saveToLocalStorage(getUserStorageKey('lastDate'), today);
             }
+            
+            // Try to sync with backend (but don't block on it)
+            loadFromBackend().then(backendData => {
+                if (backendData) {
+                    // Merge backend data if it has more history items
+                    if (backendData.history && backendData.history.length > state.history.length) {
+                        state.history = backendData.history;
+                        saveToLocalStorage(getUserStorageKey('history'), state.history);
+                    }
+                    
+                    if (backendData.is_premium) {
+                        const expiry = new Date(backendData.premium_expiry);
+                        if (expiry > new Date()) {
+                            state.isPremium = true;
+                            saveToLocalStorage(getUserStorageKey('isPremium'), true);
+                        }
+                    }
+                }
+                updateUI();
+            });
+            
+            updateUI();
         }
 
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('edupadiUserEmail');
+                // Clear user-specific data
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('edupadi_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
                 location.reload();
             }
         }
@@ -519,26 +532,24 @@
                 
                 state.history.push(historyItem);
                 
-                // Keep only last 50 items to avoid data bloat
+                // Keep only last 50 items
                 if (state.history.length > 50) {
                     state.history = state.history.slice(-50);
                 }
                 
                 state.questionsToday++;
                 
-                console.log('Saving history with', state.history.length, 'items');
+                // Save to localStorage IMMEDIATELY
+                saveToLocalStorage(getUserStorageKey('history'), state.history);
+                saveToLocalStorage(getUserStorageKey('questionsToday'), state.questionsToday);
                 
-                // Save to backend
-                const success = await updateUserData(state.userEmail, { 
-                    questions_today: state.questionsToday,
-                    history: state.history
+                console.log('Saved to localStorage:', {
+                    history: state.history.length,
+                    questionsToday: state.questionsToday
                 });
                 
-                if (success) {
-                    console.log('History saved successfully');
-                } else {
-                    console.error('Failed to save history');
-                }
+                // Sync to backend in background (don't wait)
+                syncToBackend();
                 
                 updateUI();
                 questionInput.value = '';
@@ -596,13 +607,19 @@
                         const expiry = new Date();
                         expiry.setMonth(expiry.getMonth() + 1);
                         
-                        await updateUserData(state.userEmail, {
+                        state.isPremium = true;
+                        
+                        // Save to localStorage immediately
+                        saveToLocalStorage(getUserStorageKey('isPremium'), true);
+                        saveToLocalStorage(getUserStorageKey('premiumExpiry'), expiry.toISOString());
+                        
+                        // Sync to backend
+                        await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}`, 'PATCH', {
                             is_premium: true,
                             premium_expiry: expiry.toISOString(),
                             transaction_id: response.transaction_id
                         });
                         
-                        state.isPremium = true;
                         updateUI();
                         alert('🎉 Welcome to Premium! You now have unlimited access!');
                     }
