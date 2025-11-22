@@ -253,20 +253,45 @@
         }
 
         async function syncToBackend() {
-            if (!CONFIG.USE_BACKEND || !state.userEmail) return;
+            if (!CONFIG.USE_BACKEND || !state.userEmail) {
+                console.log('⚠️ Sync skipped: Backend disabled or no email');
+                return;
+            }
             
             try {
-                // Try to update existing user
-                await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}`, 'PATCH', {
-                    questions_today: state.questionsToday,
-                    history: state.history,
-                    is_premium: state.isPremium,
-                    last_updated: new Date().toISOString()
+                console.log('📤 Syncing to backend...', {
+                    email: state.userEmail,
+                    history: state.history.length,
+                    questionsToday: state.questionsToday
                 });
                 
-                console.log('Synced to backend successfully');
+                // First, check if user exists
+                const existing = await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}&select=*`);
+                
+                if (existing && existing.length > 0) {
+                    // Update existing user
+                    const result = await callBackend(`users?email=eq.${encodeURIComponent(state.userEmail)}`, 'PATCH', {
+                        questions_today: state.questionsToday,
+                        history: state.history,
+                        is_premium: state.isPremium,
+                        last_updated: new Date().toISOString()
+                    });
+                    console.log('✅ Updated existing user:', result);
+                } else {
+                    // Create new user
+                    const result = await callBackend('users', 'POST', {
+                        email: state.userEmail,
+                        questions_today: state.questionsToday,
+                        history: state.history,
+                        is_premium: state.isPremium,
+                        created_at: new Date().toISOString()
+                    });
+                    console.log('✅ Created new user:', result);
+                }
+                
+                console.log('✅ Synced to backend successfully');
             } catch (error) {
-                console.error('Backend sync failed:', error);
+                console.error('❌ Backend sync failed:', error);
             }
         }
 
