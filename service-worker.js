@@ -1,0 +1,4 @@
+const CACHE_NAME = 'edupadi-v1';
+const urlsToCache = ['index.html','homework.html','solver.html','data.html','gigs.html','assets/styles.css','assets/app.js'];
+self.addEventListener('install', e=>{ e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(urlsToCache))); });
+self.addEventListener('fetch', e=>{ e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))); });
