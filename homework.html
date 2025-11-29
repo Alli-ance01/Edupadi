@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>EduPadi — Snap Homework</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="app-bg">
+<main class="app-shell">
+  <header class="topbar">
+    <a class="back" href="index.html">←</a>
+    <div class="brand-text">Snap Homework</div>
+    <div style="width:40px"></div>
+  </header>
+
+  <section class="camera-card">
+    <div class="camera-preview" id="cameraPreview">
+      <video id="video" playsinline autoplay muted></video>
+      <canvas id="captureCanvas" style="display:none"></canvas>
+    </div>
+
+    <div class="camera-controls">
+      <button class="pill-btn" id="snapBtn">Snap</button>
+      <label class="pill-btn alt">
+        Upload
+        <input id="fileInput" type="file" accept="image/*" style="display:none">
+      </label>
+    </div>
+
+    <div class="ocr-preview" id="ocrPreview">
+      <h3>OCR Preview</h3>
+      <pre id="ocrText">No image yet.</pre>
+      <div class="row">
+        <button class="ghost-btn" id="processBtn">Run OCR</button>
+        <a class="cta ghost" id="sendSolver" href="solver.html">Solve</a>
+      </div>
+    </div>
+  </section>
+
+  <nav class="bottom-nav">
+    <a href="index.html">Home</a>
+    <a href="homework.html" class="active">Homework</a>
+    <a href="gigs.html">Gigs</a>
+    <a href="data.html">Bundles</a>
+  </nav>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
