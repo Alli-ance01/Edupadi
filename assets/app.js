@@ -88,51 +88,6 @@ function escapeHtml(s) {
 
     // --- Micro Gigs Logic (/gigs.html) ---
     // ... (Keep the rest of your Gigs, Data Bundles, and helper functions as they were) ...
-
-
-    // --- Homework Solver Logic (/solver.html) ---
-    const getAnswerBtn = document.getElementById('getAnswer');
-    const aiAnswerEl = document.getElementById('aiAnswer');
-
-    if (getAnswerBtn && aiAnswerEl) {
-        // Pre-fill with OCR text if available
-        const ocrText = localStorage.getItem('lastOCR') || 'Type or paste your question here...';
-        aiAnswerEl.textContent = ocrText;
-
-        getAnswerBtn.addEventListener('click', async () => {
-            const question = aiAnswerEl.textContent.trim();
-            if (question.length < 5 || question.includes('Type or paste')) return alert("Please enter a valid question!");
-
-            aiAnswerEl.innerHTML = '<div class="spinner">🧠 EduPadi Brain is Thinking...</div>';
-
-            try {
-                const res = await fetch(`${API_URL}/api/solve`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        questionText: question
-                    })
-                });
-
-                if (!res.ok) throw new Error('Backend failed to process request.');
-
-                const data = await res.json();
-                
-                // Format the AI response (Convert **text** to bold and newlines to <br>)
-                let formatted = data.answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-                formatted = formatted.replace(/\n/g, '<br>');
-
-                aiAnswerEl.innerHTML = formatted;
-
-            } catch (err) {
-                aiAnswerEl.innerHTML = '❌ Error connecting to EduPadi Brain. Check internet or API_URL.';
-                console.error("AI SOLVER ERROR:", err);
-            }
-        });
-    }
-
     // --- Micro Gigs Logic (/gigs.html) ---
     const gigsList = document.getElementById('gigsList');
     const gigModal = document.getElementById('gigModal');
