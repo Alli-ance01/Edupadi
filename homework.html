@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>EduPadi — Snap Homework</title>
+<title>EduPadi — Homework Input</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
 </head>
@@ -11,31 +11,30 @@
 <main class="app-shell">
   <header class="topbar">
     <a class="back" href="index.html">←</a>
-    <div class="brand-text">Snap Homework</div>
+    <div class="brand-text">Homework Solver</div>
     <div style="width:40px"></div>
   </header>
 
   <section class="camera-card">
-    <div class="camera-preview" id="cameraPreview">
-      <video id="video" playsinline autoplay muted></video>
-      <canvas id="captureCanvas" style="display:none"></canvas>
+    <div class="notice-box">
+        <strong>⚠️ OCR Under Maintenance:</strong> Please use the text input below for now. Our photo snapping feature is being upgraded!
+    </div>
+    
+    <h3>Paste or Type Your Question</h3>
+    <textarea id="questionInput" class="text-input-large" placeholder="E.g., What is the formula for calculating kinetic energy? Show the steps for factorizing 3x² + 5x + 2." rows="8"></textarea>
+
+    <div class="row" style="margin-top:10px;">
+        <a class="cta" id="solveTextBtn">Solve Question</a>
+        
+        <label class="pill-btn alt">
+            Upload Image (Coming Soon)
+            <input id="fileInput" type="file" accept="image/*" style="display:none" disabled>
+        </label>
     </div>
 
-    <div class="camera-controls">
-      <button class="pill-btn" id="snapBtn">Snap</button>
-      <label class="pill-btn alt">
-        Upload
-        <input id="fileInput" type="file" accept="image/*" style="display:none">
-      </label>
-    </div>
-
-    <div class="ocr-preview" id="ocrPreview">
-      <h3>OCR Preview</h3>
-      <pre id="ocrText">No image yet.</pre>
-      <div class="row">
-        <button class="ghost-btn" id="processBtn">Run OCR</button>
-        <a class="cta ghost" id="sendSolver" href="solver.html">Solve</a>
-      </div>
+    <div class="community-notes" style="margin-top:20px;">
+        <h4>📝 Quick Tip:</h4>
+        <p>For the best answer, type the question exactly as it appears in your textbook or past paper.</p>
     </div>
   </section>
 
@@ -46,7 +45,6 @@
     <a href="data.html">Bundles</a>
   </nav>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <script src="assets/app.js"></script>
 </body>
 </html>
