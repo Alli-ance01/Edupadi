@@ -16,6 +16,8 @@ function escapeHtml(s) {
     }[c]));
 }
 
+// ... existing global config and escapeHtml function ...
+
 // =================================================================
 // 2. MAIN APP LOGIC
 // =================================================================
@@ -23,80 +25,70 @@ function escapeHtml(s) {
     // --- General Helpers ---
     window.openProfile = function() { alert('Profile & settings — placeholder'); }
 
-    // --- Camera + OCR Logic (from your original file) ---
-    const video = document.getElementById('video');
-    const snapBtn = document.getElementById('snapBtn');
-    const fileInput = document.getElementById('fileInput');
-    const captureCanvas = document.getElementById('captureCanvas');
-    const ocrTextEl = document.getElementById('ocrText');
-    const processBtn = document.getElementById('processBtn');
-    const sendSolverBtn = document.getElementById('sendSolver');
+    // --- HOMEWORK INPUT LOGIC (/homework.html) ---
+    const questionInput = document.getElementById('questionInput');
+    const solveTextBtn = document.getElementById('solveTextBtn');
 
-    async function initCamera() {
-        if (!video) return;
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: 'environment'
-                },
-                audio: false
-            });
-            video.srcObject = stream;
-            await video.play();
-        } catch (e) {
-            console.warn('Camera init failed', e);
-            const previewEl = document.getElementById('cameraPreview');
-            if (previewEl) previewEl.innerHTML = '<div class="placeholder">Camera not available — use Upload</div>';
-        }
-    }
-    initCamera();
-
-    function captureImage() {
-        if (!video) return null;
-        const w = video.videoWidth;
-        const h = video.videoHeight;
-        captureCanvas.width = w;
-        captureCanvas.height = h;
-        const ctx = captureCanvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, w, h);
-        return captureCanvas.toDataURL('image/jpeg', 0.9);
+    if (solveTextBtn) {
+        solveTextBtn.addEventListener('click', () => {
+            const question = questionInput.value.trim();
+            if (question.length < 10) {
+                return alert("Please type a detailed question (at least 10 characters) before solving.");
+            }
+            // Save the user's question to be picked up by solver.html
+            localStorage.setItem('lastOCR', question);
+            // Redirect to the solver page where the API call happens
+            window.location.href = 'solver.html';
+        });
     }
 
-    if (snapBtn) snapBtn.addEventListener('click', async () => {
-        const dataUrl = captureImage();
-        if (!dataUrl) return alert('Capture failed');
-        localStorage.setItem('lastImage', dataUrl);
-        // Display the image preview instead of raw text until OCR runs
-        if (ocrTextEl) ocrTextEl.innerHTML = `<img src="${dataUrl}" style="max-width:100%;height:auto;border-radius:8px;">`;
-    });
+    // --- HOMEWORK SOLVER LOGIC (/solver.html) ---
+    const getAnswerBtn = document.getElementById('getAnswer');
+    const aiAnswerEl = document.getElementById('aiAnswer');
 
-    if (fileInput) fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                localStorage.setItem('lastImage', event.target.result);
-                if (ocrTextEl) ocrTextEl.innerHTML = `<img src="${event.target.result}" style="max-width:100%;height:auto;border-radius:8px;">`;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
+    if (getAnswerBtn && aiAnswerEl) {
+        // Retrieve the question saved from the homework page
+        const ocrText = localStorage.getItem('lastOCR') || 'Type or paste your question here...';
+        aiAnswerEl.textContent = ocrText;
 
-    // --- Placeholder for OCR Processing (Requires an OCR API or library) ---
-    if (processBtn) processBtn.addEventListener('click', () => {
-        const lastImage = localStorage.getItem('lastImage');
-        if (!lastImage) return alert('No image captured or uploaded.');
+        getAnswerBtn.addEventListener('click', async () => {
+            const question = aiAnswerEl.textContent.trim();
+            if (question.length < 5 || question.includes('Type or paste')) return alert("Please enter a valid question!");
 
-        // 1. Simulate OCR processing time
-        if (ocrTextEl) ocrTextEl.textContent = 'Processing image... (3 sec simulation)';
-        setTimeout(() => {
-            // 2. Simulate the extracted text (This would be the OCR API call result)
-            const simulatedText = 'Question: Calculate the value of x if 3x + 5 = 14. Show all steps.';
-            localStorage.setItem('lastOCR', simulatedText);
-            if (ocrTextEl) ocrTextEl.textContent = simulatedText;
-            if (sendSolverBtn) sendSolverBtn.classList.add('cta');
-        }, 3000);
-    });
+            aiAnswerEl.innerHTML = '<div class="spinner">🧠 EduPadi Brain is Thinking...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}/api/solve`, {
+                    // ... (API call logic remains the same) ...
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        questionText: question
+                    })
+                });
+
+                if (!res.ok) throw new Error('Backend failed to process request.');
+
+                const data = await res.json();
+                
+                // Format the AI response (Convert **text** to bold and newlines to <br>)
+                let formatted = data.answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                formatted = formatted.replace(/\n/g, '<br>');
+
+                aiAnswerEl.innerHTML = formatted;
+
+            } catch (err) {
+                aiAnswerEl.innerHTML = '❌ Error connecting to EduPadi Brain. Check internet or API_URL.';
+                console.error("AI SOLVER ERROR:", err);
+            }
+        });
+    }
+
+    // --- Micro Gigs Logic (/gigs.html) ---
+    // ... (Keep the rest of your Gigs, Data Bundles, and helper functions as they were) ...
+
 
     // --- Homework Solver Logic (/solver.html) ---
     const getAnswerBtn = document.getElementById('getAnswer');
