@@ -1,160 +1,305 @@
-// Shared JS for EduPadi starter
-(function(){
-  // basic navigation helpers
-  window.openProfile = function(){ alert('Profile & settings — placeholder'); }
+// =================================================================
+// 1. GLOBAL CONFIGURATION (UPDATE THIS)
+// =================================================================
+// IMPORTANT: Replace this with your deployed backend URL (e.g., https://your-edupadi-app.glitch.me)
+const API_URL = 'https://YOUR-BACKEND-URL-HERE.com'; 
 
-  // Camera + OCR logic
-  const video = document.getElementById('video');
-  const snapBtn = document.getElementById('snapBtn');
-  const fileInput = document.getElementById('fileInput');
-  const captureCanvas = document.getElementById('captureCanvas');
-  const ocrTextEl = document.getElementById('ocrText');
-  const processBtn = document.getElementById('processBtn');
+// Helper function to prevent XSS attacks when rendering user content
+function escapeHtml(s) {
+    if (typeof s !== 'string') return s;
+    return s.replace(/[&<>\"']/g, c => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    }[c]));
+}
 
-  async function initCamera(){
-    if(!video) return;
-    try{
-      const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
-      video.srcObject = stream;
-      await video.play();
-    }catch(e){
-      console.warn('Camera init failed', e);
-      document.getElementById('cameraPreview').innerHTML = '<div class="placeholder">Camera not available — use Upload</div>';
+// =================================================================
+// 2. MAIN APP LOGIC
+// =================================================================
+(function() {
+    // --- General Helpers ---
+    window.openProfile = function() { alert('Profile & settings — placeholder'); }
+
+    // --- Camera + OCR Logic (from your original file) ---
+    const video = document.getElementById('video');
+    const snapBtn = document.getElementById('snapBtn');
+    const fileInput = document.getElementById('fileInput');
+    const captureCanvas = document.getElementById('captureCanvas');
+    const ocrTextEl = document.getElementById('ocrText');
+    const processBtn = document.getElementById('processBtn');
+    const sendSolverBtn = document.getElementById('sendSolver');
+
+    async function initCamera() {
+        if (!video) return;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment'
+                },
+                audio: false
+            });
+            video.srcObject = stream;
+            await video.play();
+        } catch (e) {
+            console.warn('Camera init failed', e);
+            const previewEl = document.getElementById('cameraPreview');
+            if (previewEl) previewEl.innerHTML = '<div class="placeholder">Camera not available — use Upload</div>';
+        }
     }
-  }
-  initCamera();
+    initCamera();
 
-  function captureImage(){
-    if(!video) return null;
-    const w = video.videoWidth; const h = video.videoHeight;
-    captureCanvas.width = w; captureCanvas.height = h;
-    const ctx = captureCanvas.getContext('2d');
-    ctx.drawImage(video,0,0,w,h);
-    return captureCanvas.toDataURL('image/jpeg',0.9);
-  }
+    function captureImage() {
+        if (!video) return null;
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        captureCanvas.width = w;
+        captureCanvas.height = h;
+        const ctx = captureCanvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, w, h);
+        return captureCanvas.toDataURL('image/jpeg', 0.9);
+    }
 
-  if(snapBtn) snapBtn.addEventListener('click', async ()=>{
-    const dataUrl = captureImage();
-    if(!dataUrl) return alert('Capture failed');
-    localStorage.setItem('lastImage', dataUrl);
-    document.getElementById('ocrText').textContent = 'Image captured — tap Run OCR';
-  });
+    if (snapBtn) snapBtn.addEventListener('click', async () => {
+        const dataUrl = captureImage();
+        if (!dataUrl) return alert('Capture failed');
+        localStorage.setItem('lastImage', dataUrl);
+        // Display the image preview instead of raw text until OCR runs
+        if (ocrTextEl) ocrTextEl.innerHTML = `<img src="${dataUrl}" style="max-width:100%;height:auto;border-radius:8px;">`;
+    });
 
-  if(fileInput) fileInput.addEventListener('change', (ev)=>{
-    const f = ev.target.files[0];
-    if(!f) return;
-    const reader = new FileReader();
-    reader.onload = ()=>{ localStorage.setItem('lastImage', reader.result); document.getElementById('ocrText').textContent = 'Image uploaded — tap Run OCR'; }
-    reader.readAsDataURL(f);
-  });
+    if (fileInput) fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                localStorage.setItem('lastImage', event.target.result);
+                if (ocrTextEl) ocrTextEl.innerHTML = `<img src="${event.target.result}" style="max-width:100%;height:auto;border-radius:8px;">`;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
 
-  if(processBtn) processBtn.addEventListener('click', async ()=>{
-    const data = localStorage.getItem('lastImage');
-    if(!data) return alert('No image captured or uploaded');
-    ocrTextEl.textContent = 'Working...';
-    try{
-      const { createWorker } = Tesseract;
-      const worker = createWorker({logger:m=>console.log(m)});
-      await worker.load(); await worker.loadLanguage('eng'); await worker.initialize('eng');
-      const res = await worker.recognize(data);
-      await worker.terminate();
-      const text = res.data.text.trim();
-      ocrTextEl.textContent = text || 'No text found';
-      // save to mock history
-      const history = JSON.parse(localStorage.getItem('history')||'[]');
-      history.unshift({time:Date.now(), image:data, ocr:text});
-      localStorage.setItem('history', JSON.stringify(history.slice(0,30)));
-      // prefill solver data
-      localStorage.setItem('lastOCR', text);
-    }catch(e){console.error(e); ocrTextEl.textContent = 'OCR failed — try a clearer image.'}
-  });
+    // --- Placeholder for OCR Processing (Requires an OCR API or library) ---
+    if (processBtn) processBtn.addEventListener('click', () => {
+        const lastImage = localStorage.getItem('lastImage');
+        if (!lastImage) return alert('No image captured or uploaded.');
 
-  // Solver page behaviour
-  const getAnswerBtn = document.getElementById('getAnswer');
-  if(getAnswerBtn){
-    document.getElementById('metaTime').textContent = new Date().toLocaleString();
-    const last = localStorage.getItem('lastOCR')||'No OCR text available.';
+        // 1. Simulate OCR processing time
+        if (ocrTextEl) ocrTextEl.textContent = 'Processing image... (3 sec simulation)';
+        setTimeout(() => {
+            // 2. Simulate the extracted text (This would be the OCR API call result)
+            const simulatedText = 'Question: Calculate the value of x if 3x + 5 = 14. Show all steps.';
+            localStorage.setItem('lastOCR', simulatedText);
+            if (ocrTextEl) ocrTextEl.textContent = simulatedText;
+            if (sendSolverBtn) sendSolverBtn.classList.add('cta');
+        }, 3000);
+    });
+
+    // --- Homework Solver Logic (/solver.html) ---
+    const getAnswerBtn = document.getElementById('getAnswer');
     const aiAnswerEl = document.getElementById('aiAnswer');
-    aiAnswerEl.textContent = last;
 
-    getAnswerBtn.addEventListener('click', ()=>{
-      // simulate LLM call (replace with real API server later)
-      aiAnswerEl.textContent = 'Computing answer...';
-      setTimeout(()=>{
-        aiAnswerEl.innerHTML = '<strong>Step 1:</strong> Read the question carefully.\n\n<strong>Step 2:</strong> Apply method X.\n\n<strong>Note:</strong> This is simulated. Connect your LLM API when ready.';
-        // save note
-        const notes = JSON.parse(localStorage.getItem('notes')||'[]');
-        notes.unshift({time:Date.now(), text:'Sample community note based on solution.'});
-        localStorage.setItem('notes', JSON.stringify(notes.slice(0,20)));
-        renderNotes();
-      },1200);
+    if (getAnswerBtn && aiAnswerEl) {
+        // Pre-fill with OCR text if available
+        const ocrText = localStorage.getItem('lastOCR') || 'Type or paste your question here...';
+        aiAnswerEl.textContent = ocrText;
+
+        getAnswerBtn.addEventListener('click', async () => {
+            const question = aiAnswerEl.textContent.trim();
+            if (question.length < 5 || question.includes('Type or paste')) return alert("Please enter a valid question!");
+
+            aiAnswerEl.innerHTML = '<div class="spinner">🧠 EduPadi Brain is Thinking...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}/api/solve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        questionText: question
+                    })
+                });
+
+                if (!res.ok) throw new Error('Backend failed to process request.');
+
+                const data = await res.json();
+                
+                // Format the AI response (Convert **text** to bold and newlines to <br>)
+                let formatted = data.answer.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                formatted = formatted.replace(/\n/g, '<br>');
+
+                aiAnswerEl.innerHTML = formatted;
+
+            } catch (err) {
+                aiAnswerEl.innerHTML = '❌ Error connecting to EduPadi Brain. Check internet or API_URL.';
+                console.error("AI SOLVER ERROR:", err);
+            }
+        });
+    }
+
+    // --- Micro Gigs Logic (/gigs.html) ---
+    const gigsList = document.getElementById('gigsList');
+    const gigModal = document.getElementById('gigModal');
+    const newGigBtn = document.getElementById('newGig');
+    const cancelGig = document.getElementById('cancelGig');
+    const saveGig = document.getElementById('saveGig');
+
+    async function loadGigs() {
+        if (!gigsList) return;
+        gigsList.innerHTML = '<div class="spinner">Loading Gigs...</div>';
+        try {
+            const res = await fetch(`${API_URL}/api/gigs`);
+            const gigs = await res.json();
+
+            if (gigs.length === 0) {
+                gigsList.innerHTML = '<div class="placeholder">No gigs posted yet. Be the first!</div>';
+                return;
+            }
+
+            gigsList.innerHTML = gigs.map(g => `
+                <div class="card gig-card">
+                    <div style="display:flex;justify-content:space-between">
+                        <span style="font-weight:800;font-size:1.1em">${escapeHtml(g.title)}</span>
+                        <span style="color:var(--accent);font-weight:800">₦${g.price}</span>
+                    </div>
+                    <div style="color:#cbd2ff;margin-top:6px;font-size:0.9em">${escapeHtml(g.desc)}</div>
+                    ${g.contact ? `<div style="margin-top:8px;font-size:0.8em;opacity:0.7">Contact: <a href="tel:${escapeHtml(g.contact)}" style="color:var(--primary)">${escapeHtml(g.contact)}</a></div>` : ''}
+                </div>
+            `).join('');
+        } catch (e) {
+            gigsList.innerHTML = '<div class="placeholder">Offline Mode: Could not connect to load shared gigs.</div>';
+            console.error("GIGS FETCH ERROR:", e);
+        }
+    }
+
+    // Trigger load on startup for gigs page
+    if (gigsList) loadGigs();
+
+    if (newGigBtn) newGigBtn.addEventListener('click', () => {
+        if(gigModal) gigModal.style.display = 'flex';
     });
-  }
-
-  function renderNotes(){
-    const list = document.getElementById('notesList');
-    if(!list) return;
-    const notes = JSON.parse(localStorage.getItem('notes')||'[]');
-    if(notes.length===0) list.innerHTML = '<div class="placeholder">No community notes.</div>';
-    else list.innerHTML = notes.map(n=>`<div class="card" style="margin-bottom:8px;padding:8px">${new Date(n.time).toLocaleString()}<div style="font-weight:700;margin-top:6px">${n.text}</div></div>`).join('');
-  }
-  renderNotes();
-
-  // Bundles logic (simple static DB)
-  const bundles = [
-    {provider:'MTN',name:'500MB/7 days',mb:500,price:200},
-    {provider:'GLO',name:'1GB/7 days',mb:1024,price:300},
-    {provider:'AIRTEL',name:'250MB/7 days',mb:250,price:150},
-    {provider:'9MOBILE',name:'750MB/7 days',mb:750,price:250}
-  ];
-  const calcBtn = document.getElementById('calcBundles');
-  if(calcBtn){
-    calcBtn.addEventListener('click', ()=>{
-      const w = Number(document.getElementById('weeklyData').value||0);
-      if(!w) return alert('Enter weekly data in MB');
-      // simple recommend by price/mb
-      const sorted = bundles.map(b=>({...b,score:(b.price/b.mb)})).sort((a,b)=>a.score-b.score);
-      const html = sorted.map(b=>`<div class="card" style="margin-bottom:8px;padding:10px"><div style="font-weight:800">${b.provider} · ${b.name}</div><div style="color:#cbd2ff">${b.mb} MB · ₦${b.price}</div><div style="margin-top:8px"><button class="pill-btn" onclick="alert('Buy via partner link — mock')">Buy</button></div></div>`).join('');
-      document.getElementById('bundleResults').innerHTML = html;
+    if (cancelGig) cancelGig.addEventListener('click', () => {
+        if(gigModal) gigModal.style.display = 'none';
     });
-  }
 
-  // Gigs modal
-  const newGigBtn = document.getElementById('newGig');
-  const gigModal = document.getElementById('gigModal');
-  const saveGig = document.getElementById('saveGig');
-  const cancelGig = document.getElementById('cancelGig');
-  function renderGigs(){
-    const place = document.getElementById('gigsList');
-    const gigs = JSON.parse(localStorage.getItem('gigs')||'[]');
-    if(!place) return;
-    if(gigs.length===0) place.innerHTML = '<div class="placeholder">No gigs yet. Create one.</div>';
-    else place.innerHTML = gigs.map(g=>`<div class="card" style="margin-bottom:8px;padding:10px"><div style="font-weight:800">${escapeHtml(g.title)} · ₦${g.price}</div><div style="color:#cbd2ff;margin-top:6px">${escapeHtml(g.desc)}</div></div>`).join('');
-  }
-  if(newGigBtn) newGigBtn.addEventListener('click', ()=>{ gigModal.style.display='flex'; });
-  if(cancelGig) cancelGig.addEventListener('click', ()=>{ gigModal.style.display='none'; });
-  if(saveGig) saveGig.addEventListener('click', ()=>{
-    const title = document.getElementById('gigTitle').value.trim();
-    const desc = document.getElementById('gigDesc').value.trim();
-    const price = Number(document.getElementById('gigPrice').value||0);
-    if(!title||!desc||!price) return alert('Fill all gig fields');
-    const gigs = JSON.parse(localStorage.getItem('gigs')||'[]');
-    gigs.unshift({title,desc,price});
-    localStorage.setItem('gigs', JSON.stringify(gigs));
-    gigModal.style.display='none'; renderGigs();
-  });
-  renderGigs();
+    if (saveGig) {
+        saveGig.addEventListener('click', async () => {
+            const title = document.getElementById('gigTitle').value.trim();
+            const desc = document.getElementById('gigDesc').value.trim();
+            const price = Number(document.getElementById('gigPrice').value || 0);
+            
+            // NOTE: Add an input with id="gigContact" to your gigs.html modal!
+            const contact = document.getElementById('gigContact')?.value.trim() || 'Not specified'; 
 
-  // small helpers
-  function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-// Modal show/hide
-const modal = document.getElementById('gigModal');
-document.getElementById('newGig')?.addEventListener('click',()=>modal.classList.add('show'));
-document.getElementById('cancelGig')?.addEventListener('click',()=>modal.classList.remove('show'));
+            if (!title || !price) return alert('Title and Price are required fields.');
 
-// Optional: button pulse on click
-document.querySelectorAll('.cta, .pill-btn, .ghost-btn').forEach(btn=>{
-  btn.addEventListener('mousedown',()=>btn.style.transform='scale(0.95)');
-  btn.addEventListener('mouseup',()=>btn.style.transform='scale(1)');
-});
+            saveGig.textContent = 'Posting...';
+            saveGig.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/api/gigs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title,
+                        desc,
+                        price,
+                        contact
+                    })
+                });
+                if (!res.ok) throw new Error('Failed to post gig to backend.');
+
+                if (gigModal) gigModal.style.display = 'none';
+                alert('Gig posted successfully!');
+                loadGigs(); // Refresh the list
+            } catch (e) {
+                alert('Failed to post gig. Server error.');
+                console.error("GIG POST ERROR:", e);
+            } finally {
+                saveGig.textContent = 'Save';
+                saveGig.disabled = false;
+            }
+        });
+    }
+
+
+    // --- Data Bundles Logic (/data.html) ---
+    const calcBundlesBtn = document.getElementById('calcBundles');
+    const weeklyDataInput = document.getElementById('weeklyData');
+    const bundleResultsEl = document.getElementById('bundleResults');
+
+    async function fetchAndRecommendBundles() {
+        if (!bundleResultsEl) return;
+        bundleResultsEl.innerHTML = '<div class="spinner">Fetching latest bundle prices...</div>';
+
+        try {
+            const res = await fetch(`${API_URL}/api/bundles`);
+            const allBundles = await res.json();
+            
+            const weeklyDataMB = Number(weeklyDataInput.value);
+            
+            if (weeklyDataMB <= 0) {
+                // If no input, just show the best deals
+                allBundles.sort((a, b) => (a.price / a.mb) - (b.price / b.mb));
+                const topBundles = allBundles.slice(0, 5);
+
+                bundleResultsEl.innerHTML = `
+                    <h4>Top Value Deals:</h4>
+                    ${topBundles.map(b => `
+                        <div class="card data-card">
+                            <span style="font-weight:800;color:var(--accent)">${b.provider}</span>: 
+                            ${b.name} (${Math.round((b.price / b.mb) * 1000) / 1000} ₦/MB)
+                        </div>
+                    `).join('')}
+                    <p style="opacity:0.7;margin-top:10px;">Enter your required weekly data to find the *best* option for you.</p>
+                `;
+                return;
+            }
+
+            // 1. Filter bundles that meet or exceed the required data
+            let suitableBundles = allBundles.filter(b => b.mb >= weeklyDataMB);
+
+            // 2. Calculate Price-per-MB and sort by best value
+            suitableBundles.forEach(b => {
+                b.value = b.price / b.mb;
+            });
+            suitableBundles.sort((a, b) => a.value - b.value); // Cheapest price per MB first
+
+            if (suitableBundles.length === 0) {
+                bundleResultsEl.innerHTML = '<div class="placeholder">No single bundle meets this high requirement. Try smaller options.</div>';
+                return;
+            }
+
+            // 3. Display the recommendations
+            bundleResultsEl.innerHTML = `
+                <p style="color:var(--primary);font-weight:bold;margin-bottom:10px;">✅ Best Recommendation for ${weeklyDataMB}MB/week:</p>
+                ${suitableBundles.slice(0, 3).map(b => `
+                    <div class="card data-card" style="margin-bottom:8px;border:1px solid ${b.value === suitableBundles[0].value ? 'var(--accent)' : 'var(--glass)'};">
+                        <div style="display:flex;justify-content:space-between">
+                            <span style="font-weight:800">${b.provider} - ${b.name}</span>
+                            <span style="font-weight:800;color:var(--accent)">₦${b.price}</span>
+                        </div>
+                        <div style="font-size:0.8em;opacity:0.8;margin-top:4px;">Value: ${Math.round((b.price / b.mb) * 1000) / 1000} ₦/MB</div>
+                    </div>
+                `).join('')}
+            `;
+
+
+        } catch (e) {
+            bundleResultsEl.innerHTML = '<div class="placeholder">Error fetching bundle data. Check backend URL.</div>';
+            console.error("BUNDLES FETCH ERROR:", e);
+        }
+    }
+
+    if (calcBundlesBtn) calcBundlesBtn.addEventListener('click', fetchAndRecommendBundles);
+    
+    // Load initial recommendations on page load
+    if (bundleResultsEl) fetchAndRecommendBundles(); 
+
 })();

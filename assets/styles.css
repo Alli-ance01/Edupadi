@@ -66,3 +66,32 @@ label{display:block;margin-top:8px;color:#bfc7ff}
 /* Micro interactions */
 .cta:active,.pill-btn:active{transform:translateY(2px) scale(0.995)}
 .card:active{transform:translateY(1px)}
+/* Add this to styles.css */
+.spinner {
+    padding: 15px;
+    text-align: center;
+    color: var(--primary);
+    font-weight: bold;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Style for gig cards */
+.gig-card {
+    background: var(--glass);
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.data-card {
+    background: var(--card);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
