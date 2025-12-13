@@ -2,7 +2,7 @@
 // 1. GLOBAL CONFIGURATION (UPDATE THIS)
 // =================================================================
 // IMPORTANT: Replace this with your deployed backend URL (e.g., https://your-edupadi-app.glitch.me)
-const API_URL = 'https://YOUR-BACKEND-URL-HERE.com'; 
+const API_URL = 'https://edupadi.onrender.com'; 
 
 // Helper function to prevent XSS attacks when rendering user content
 function escapeHtml(s) {
