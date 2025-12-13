@@ -16,8 +16,6 @@ function escapeHtml(s) {
     }[c]));
 }
 
-// ... existing global config and escapeHtml function ...
-
 // =================================================================
 // 2. MAIN APP LOGIC
 // =================================================================
@@ -87,8 +85,6 @@ function escapeHtml(s) {
     }
 
     // --- Micro Gigs Logic (/gigs.html) ---
-    // ... (Keep the rest of your Gigs, Data Bundles, and helper functions as they were) ...
-    // --- Micro Gigs Logic (/gigs.html) ---
     const gigsList = document.getElementById('gigsList');
     const gigModal = document.getElementById('gigModal');
     const newGigBtn = document.getElementById('newGig');
@@ -106,14 +102,15 @@ function escapeHtml(s) {
                 gigsList.innerHTML = '<div class="placeholder">No gigs posted yet. Be the first!</div>';
                 return;
             }
-
-            gigsList.innerHTML = gigs.map(g => `
-                <div class="card gig-card">
+            
+            // Inject animation-delay for staggered entrance
+            gigsList.innerHTML = gigs.map((g, index) => `
+                <div class="card gig-card" style="animation-delay: ${index * 80 + 100}ms;">
                     <div style="display:flex;justify-content:space-between">
                         <span style="font-weight:800;font-size:1.1em">${escapeHtml(g.title)}</span>
                         <span style="color:var(--accent);font-weight:800">₦${g.price}</span>
                     </div>
-                    <div style="color:#cbd2ff;margin-top:6px;font-size:0.9em">${escapeHtml(g.desc)}</div>
+                    <div style="color:var(--text-muted);margin-top:6px;font-size:0.9em">${escapeHtml(g.desc)}</div>
                     ${g.contact ? `<div style="margin-top:8px;font-size:0.8em;opacity:0.7">Contact: <a href="tel:${escapeHtml(g.contact)}" style="color:var(--primary)">${escapeHtml(g.contact)}</a></div>` : ''}
                 </div>
             `).join('');
@@ -127,10 +124,10 @@ function escapeHtml(s) {
     if (gigsList) loadGigs();
 
     if (newGigBtn) newGigBtn.addEventListener('click', () => {
-        if(gigModal) gigModal.style.display = 'flex';
+        if(gigModal) gigModal.classList.add('show'); // Use class for animation
     });
     if (cancelGig) cancelGig.addEventListener('click', () => {
-        if(gigModal) gigModal.style.display = 'none';
+        if(gigModal) gigModal.classList.remove('show'); // Use class for animation
     });
 
     if (saveGig) {
@@ -162,7 +159,7 @@ function escapeHtml(s) {
                 });
                 if (!res.ok) throw new Error('Failed to post gig to backend.');
 
-                if (gigModal) gigModal.style.display = 'none';
+                if (gigModal) gigModal.classList.remove('show');
                 alert('Gig posted successfully!');
                 loadGigs(); // Refresh the list
             } catch (e) {
@@ -198,8 +195,8 @@ function escapeHtml(s) {
 
                 bundleResultsEl.innerHTML = `
                     <h4>Top Value Deals:</h4>
-                    ${topBundles.map(b => `
-                        <div class="card data-card">
+                    ${topBundles.map((b, index) => `
+                        <div class="card data-card" style="animation-delay: ${index * 80 + 100}ms;">
                             <span style="font-weight:800;color:var(--accent)">${b.provider}</span>: 
                             ${b.name} (${Math.round((b.price / b.mb) * 1000) / 1000} ₦/MB)
                         </div>
@@ -224,10 +221,11 @@ function escapeHtml(s) {
             }
 
             // 3. Display the recommendations
+            // Inject animation-delay for staggered entrance
             bundleResultsEl.innerHTML = `
                 <p style="color:var(--primary);font-weight:bold;margin-bottom:10px;">✅ Best Recommendation for ${weeklyDataMB}MB/week:</p>
-                ${suitableBundles.slice(0, 3).map(b => `
-                    <div class="card data-card" style="margin-bottom:8px;border:1px solid ${b.value === suitableBundles[0].value ? 'var(--accent)' : 'var(--glass)'};">
+                ${suitableBundles.slice(0, 3).map((b, index) => `
+                    <div class="card data-card" style="margin-bottom:8px;border:1px solid ${b.value === suitableBundles[0].value ? 'var(--accent)' : 'var(--glass)'}; animation-delay: ${index * 80 + 100}ms;">
                         <div style="display:flex;justify-content:space-between">
                             <span style="font-weight:800">${b.provider} - ${b.name}</span>
                             <span style="font-weight:800;color:var(--accent)">₦${b.price}</span>
