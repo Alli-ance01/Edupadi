@@ -45,7 +45,7 @@ app.post('/api/solve', async (req, res) => {
         if (!questionText) return res.status(400).json({ error: 'No text provided' });
 
         // Use Gemini Flash (Fast & Cheap/Free)
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const prompt = `You are a helpful tutor for a Nigerian student. 
         Solve this strictly in steps. 
         Question: ${questionText}`;
