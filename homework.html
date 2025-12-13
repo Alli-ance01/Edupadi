@@ -16,23 +16,21 @@
   </header>
 
   <section class="camera-card">
-    <div class="notice-box">
+    <div class="notice-box" style="background:rgba(255, 204, 0, 0.1); border: 1px solid #ffcc00; padding:10px; border-radius:12px; margin-bottom:15px; color: #ffcc00;">
         <strong>⚠️ OCR Under Maintenance:</strong> Please use the text input below for now. Our photo snapping feature is being upgraded!
     </div>
     
     <h3>Paste or Type Your Question</h3>
     <textarea id="questionInput" class="text-input-large" placeholder="E.g., What is the formula for calculating kinetic energy? Show the steps for factorizing 3x² + 5x + 2." rows="8"></textarea>
 
-    <div class="row" style="margin-top:10px;">
-        <a class="cta" id="solveTextBtn">Solve Question</a>
-        
-        <label class="pill-btn alt">
+    <div class="cta-row" style="margin-top:10px; justify-content: space-between;">
+        <button class="cta" id="solveTextBtn">Solve Question</button>
+        <button class="ghost-btn">
             Upload Image (Coming Soon)
-            <input id="fileInput" type="file" accept="image/*" style="display:none" disabled>
-        </label>
+        </button>
     </div>
 
-    <div class="community-notes" style="margin-top:20px;">
+    <div class="community-notes" style="margin-top:20px; color: var(--text-muted); font-size: 0.9em;">
         <h4>📝 Quick Tip:</h4>
         <p>For the best answer, type the question exactly as it appears in your textbook or past paper.</p>
     </div>
