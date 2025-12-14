@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>EduPadi — Dashboard</title>
+<title>EduPadi — Student Dashboard</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Poppins:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/styles.css">
@@ -15,25 +15,68 @@
       <div class="logo-glow">E</div>
       <div class="brand-text">EduPadi</div>
     </div>
-    <button class="ghost-btn" onclick="openProfile()">Profile</button>
+    <button id="profileBtn" class="ghost-btn" onclick="window.openProfile()" style="display:none; padding: 6px 12px; font-size: 0.8em;">Profile</button>
   </header>
 
   <section class="hero">
-    <h1 class="hero-title">Fast answers. Smart data. Side hustles.</h1>
+    <h1 class="hero-title">Fast answers.<br>Smart data.<br>Side hustles.</h1>
     <p class="hero-sub">Built for Nigerian students. Mobile-first PWA.</p>
-    <div class="cta-row">
+
+    <div id="authContainer" class="card" style="margin-top: 20px; border: 1px solid var(--primary); text-align: center;">
+        <h3 id="authStatus" style="margin-top:0; color: var(--primary);">Login Required</h3>
+        <p style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 15px;">Access your dashboard to start solving.</p>
+        
+        <input type="email" id="authEmail" placeholder="Enter your email" style="text-align:center;">
+        <input type="password" id="authPassword" placeholder="Enter password" style="text-align:center;">
+        
+        <div class="cta-row" style="margin-top:15px;">
+            <button class="cta" onclick="window.doLogin()">Login</button>
+            <button class="pill-btn alt" onclick="window.doRegister()">Sign Up</button>
+        </div>
+        <div id="authLoader" style="display:none; margin-top:10px; color: var(--text-muted);">Connecting...</div>
+    </div>
+
+    <div id="heroButtons" class="cta-row" style="display:none;">
       <a class="cta" href="homework.html">Snap Homework</a>
       <a class="ghost-btn" href="data.html">Find Bundles</a>
     </div>
   </section>
 
-  <section class="cards">
-    <a class="card" href="homework.html">
-      <div class="card-icon">📸</div>
-      <div class="card-title">Homework Solver</div>
-      <div class="card-sub">Snap questions — get step-by-step answers</div>
-    </a>
-    <a class="card" href="data.html">
+  <div id="protectedContent" style="display:none;">
+      <section class="cards">
+        <a class="card" href="homework.html">
+          <div class="card-icon">📸</div>
+          <div class="card-title">Homework Solver</div>
+          <div class="card-sub">Snap questions — get step-by-step answers</div>
+        </a>
+        <a class="card" href="data.html">
+          <div class="card-icon">📶</div>
+          <div class="card-title">Data Saver</div>
+          <div class="card-sub">Cheapest bundles for your usage</div>
+        </a>
+        <a class="card" href="gigs.html">
+          <div class="card-icon">💼</div>
+          <div class="card-title">Micro Gigs</div>
+          <div class="card-sub">Find teen-friendly side hustles</div>
+        </a>
+      </section>
+
+      <div style="text-align:center; margin-top: 20px;">
+        <button onclick="window.doLogout()" class="ghost-btn" style="color: var(--text-muted); border-color: transparent;">Logout</button>
+      </div>
+
+      <nav class="bottom-nav">
+        <a href="index.html" class="active">Home</a>
+        <a href="homework.html">Homework</a>
+        <a href="gigs.html">Gigs</a>
+        <a href="data.html">Bundles</a>
+      </nav>
+  </div>
+
+</main>
+<script src="assets/app.js"></script>
+</body>
+</html>
       <div class="card-icon">📶</div>
       <div class="card-title">Data Saver</div>
       <div class="card-sub">Cheapest bundles for your usage</div>
