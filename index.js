@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(cors());
 
 // --- CONFIGURATION ---
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const MONGO_URI = process.env.MONGO_URI; 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; 
 // IMPORTANT: Add a secure JWT Secret to your .env file on Render/Glitch
@@ -225,12 +225,17 @@ app.get('/', (req, res) => res.send('EduPadi Backend is Live! 🚀'));
 
 
 // --- STARTUP ---
+// Ensure the PORT is defined by the environment variable
+const SERVER_PORT = process.env.PORT || 8080; // Use 8080 as a safer local fallback if needed
+
 mongoose.connect(MONGO_URI)
     .then(() => {
         console.log("Connected to MongoDB Atlas");
-        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        // Use the host's required port (process.env.PORT) for listening
+        app.listen(SERVER_PORT, () => console.log(`Server running on port ${SERVER_PORT}`));
     })
     .catch(err => console.error("DB Connection Error:", err));
+
 
 // 1. HEALTH CHECK
 app.get('/', (req, res) => res.send('EduPadi Backend is Live! 🚀'));
