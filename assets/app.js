@@ -1,74 +1,155 @@
-// =================================================================
-// 1. GLOBAL CONFIGURATION (UPDATE THIS)
-// =================================================================
-// IMPORTANT: Replace this with your deployed backend URL (e.g., https://your-edupadi-app.glitch.me)
-const API_URL = 'https://edupadi.onrender.com'; 
+// Shared JS for EduPadi starter
+(function(){
+  // --- CONFIGURATION ---
+  // REPLACE THIS with your actual Render/Backend URL
+  const API_BASE_URL = "https://edupadi.onrender.com"; 
 
-// Helper function to prevent XSS attacks when rendering user content
-function escapeHtml(s) {
-    if (typeof s !== 'string') return s;
-    return s.replace(/[&<>\"']/g, c => ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-    }[c]));
-}
+  // --- AUTHENTICATION STATE & HELPERS ---
+  window.getToken = () => localStorage.getItem('userToken');
+  window.getUserData = () => JSON.parse(localStorage.getItem('userData') || '{}');
 
-// =================================================================
-// 2. MAIN APP LOGIC
-// =================================================================
-(function() {
-    // --- General Helpers ---
-    window.openProfile = function() { alert('Profile & settings — placeholder'); }
+  // THE GATEKEEPER FUNCTION
+  function updateAuthUI() {
+    const token = window.getToken();
+    const userData = window.getUserData();
 
-    // --- HOMEWORK INPUT LOGIC (/homework.html) ---
-    const questionInput = document.getElementById('questionInput');
-    const solveTextBtn = document.getElementById('solveTextBtn');
+    // Get UI Elements
+    const authContainer = document.getElementById('authContainer'); // Login Box
+    const heroButtons = document.getElementById('heroButtons');     // Snap/Bundle Buttons
+    const protectedContent = document.getElementById('protectedContent'); // Cards & Nav
+    const profileBtn = document.getElementById('profileBtn');       // Header Profile
+    const solverStatusEl = document.getElementById('solverStatus'); // For solver page
 
-    if (solveTextBtn) {
-        solveTextBtn.addEventListener('click', () => {
-            const question = questionInput.value.trim();
-            if (question.length < 10) {
-                return alert("Please type a detailed question (at least 10 characters) before solving.");
-            }
-            // Save the user's question to be picked up by solver.html
-            localStorage.setItem('lastOCR', question);
-            // Redirect to the solver page where the API call happens
-            window.location.href = 'solver.html';
-        });
+    if (token && userData.email) {
+      // === USER IS LOGGED IN ===
+      // 1. Hide Login Box
+      if (authContainer) authContainer.style.display = 'none';
+      
+      // 2. Show Dashboard Content
+      if (heroButtons) heroButtons.style.display = 'flex';
+      if (protectedContent) protectedContent.style.display = 'block';
+      if (profileBtn) profileBtn.style.display = 'block';
+
+      // 3. Update Status Text (for Solver Page)
+      if (solverStatusEl) {
+        const type = userData.isPremium ? 'Premium' : 'Free';
+        solverStatusEl.innerHTML = `🟢 <b>${type} Account</b> (${userData.email})`;
+      }
+
+    } else {
+      // === USER IS LOGGED OUT ===
+      // 1. Show Login Box
+      if (authContainer) authContainer.style.display = 'block';
+      
+      // 2. Hide Dashboard Content
+      if (heroButtons) heroButtons.style.display = 'none';
+      if (protectedContent) protectedContent.style.display = 'none';
+      if (profileBtn) profileBtn.style.display = 'none';
+
+      // 3. Update Status Text (for Solver Page)
+      if (solverStatusEl) solverStatusEl.innerHTML = '🔴 Please Log In';
+    }
+  }
+
+  window.saveAuthData = (token, user) => {
+    localStorage.setItem('userToken', token);
+    localStorage.setItem('userData', JSON.stringify(user));
+    updateAuthUI();
+  };
+
+  window.doLogout = () => {
+    if(confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userData');
+        updateAuthUI();
+    }
+  };
+
+  async function handleAuth(endpoint, successMessage) {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    const loader = document.getElementById('authLoader');
+    
+    if (!email || !password) {
+      alert('Please enter both email and password.');
+      return;
     }
 
-    // --- HOMEWORK SOLVER LOGIC (/solver.html) ---
-    const getAnswerBtn = document.getElementById('getAnswer');
+    if(loader) loader.style.display = 'block';
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        window.saveAuthData(data.token, data.data.user);
+        alert(`${successMessage} successfully!`);
+      } else {
+        alert(`Error: ${data.message || 'Authentication failed.'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Network Error. Could not connect to the backend.');
+    } finally {
+        if(loader) loader.style.display = 'none';
+    }
+  }
+
+  window.doLogin = () => handleAuth('login', 'Logged in');
+  window.doRegister = () => handleAuth('register', 'Registered');
+  window.openProfile = function(){ alert('Profile Settings coming soon!'); }
+
+  // Initialize UI on page load
+  updateAuthUI();
+
+  // --- SOLVER LOGIC (AI) ---
+  const getAnswerBtn = document.getElementById('getAnswer');
+  // ... (Rest of your app.js logic for solver, camera, etc. stays the same below)
+  
+  if(getAnswerBtn){
+    const lastOCR = localStorage.getItem('lastOCR')||'No text available.';
     const aiAnswerEl = document.getElementById('aiAnswer');
+    const usageEl = document.getElementById('solverUsage');
+    
+    aiAnswerEl.textContent = lastOCR;
 
-    if (getAnswerBtn && aiAnswerEl) {
-        // Retrieve the question saved from the homework page
-        const ocrText = localStorage.getItem('lastOCR') || 'Type or paste your question here...';
-        aiAnswerEl.textContent = ocrText;
+    getAnswerBtn.addEventListener('click', async ()=>{
+      const token = window.getToken();
+      if (!token) return alert('Please log in first.');
+      
+      const question = document.getElementById('ocrText') ? 
+                       document.getElementById('ocrText').textContent : lastOCR;
 
-        getAnswerBtn.addEventListener('click', async () => {
-            const question = aiAnswerEl.textContent.trim();
-            if (question.length < 5 || question.includes('Type or paste')) return alert("Please enter a valid question!");
+      aiAnswerEl.textContent = 'Thinking...';
 
-            aiAnswerEl.innerHTML = '<div class="spinner">🧠 EduPadi Brain is Thinking...</div>';
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/solve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify({ questionText: question })
+        });
+        const data = await response.json();
 
-            try {
-                const res = await fetch(`${API_URL}/api/solve`, {
-                    // ... (API call logic remains the same) ...
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        questionText: question
-                    })
-                });
-
-                if (!res.ok) throw new Error('Backend failed to process request.');
-
+        if (response.ok) {
+            aiAnswerEl.textContent = data.answer;
+            usageEl.textContent = `Usage: ${data.count}/${data.limit}`;
+        } else if (response.status === 403) {
+            aiAnswerEl.innerHTML = '<strong>Limit Reached:</strong> ' + data.error;
+            usageEl.textContent = 'Limit Reached';
+        } else {
+            aiAnswerEl.textContent = 'Error: ' + data.message;
+        }
+      } catch (e) { aiAnswerEl.textContent = 'Network Error'; }
+    });
+  }
+})();
                 const data = await res.json();
                 
                 // Format the AI response (Convert **text** to bold and newlines to <br>)
